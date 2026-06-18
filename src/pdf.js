@@ -61,18 +61,14 @@ CATEGORY: <one of VENUE, VENDOR, TRAVEL, OTHER>
   - TRAVEL — guest accommodation / hotel room blocks, flights, shuttles, transportation
   - OTHER — wedding planners, or anything that does not clearly fit the above
 
-Then return a structured evaluation with these sections (for non-venue categories, adapt sections 3–4: assess fit and pricing relevant to that category rather than guest capacity):
+Then write a SHORT phone notification using exactly these four labels, each starting on a new line:
 
-1. SENDER & VENUE — who replied, which venue/company
-2. PRICING SUMMARY — extract all prices mentioned, convert DKK to USD, present both. If no pricing, say so.
-3. CAPACITY FIT — can this venue host ${GUEST_MIN}–${GUEST_MAX} guests for the full weekend format? Any limitations?
-4. BUDGET FIT — does total pricing fit within ${BUDGET_DKK.toLocaleString()} DKK / $${BUDGET_USD.toLocaleString()} USD? Flag if over.
-5. RED FLAGS — any contract terms, restrictions, or gaps that need follow-up (e.g. no open bar, external planner fees, tent restrictions, minimum spend)
-6. POSITIVE SIGNALS — what looks good about this venue/response
-7. RECOMMENDED ACTION — one of: [FOLLOW UP URGENTLY] [FOLLOW UP] [WAIT FOR MORE INFO] [DEPRIORITIZE] [DECLINE]
-8. SUGGESTED REPLY — 3–4 sentence follow-up email in a warm, direct tone (not formal, reads like a person wrote it)
+WHO: the venue/vendor/company/person, plus a few words on what they are.
+SUMMARY: 2–4 sentences capturing their reply. Include key pricing (show DKK and the ~USD conversion at the rate above), dates/availability, and how it fits our ~${GUEST_MIN}–${GUEST_MAX} guests and budget. Call out any critical red flag or deadline. If there's no pricing yet, say so plainly.
+NEXT STEPS: 1–2 sentences — what they proposed, and the single best next action for us.
+ACTION: exactly one of [FOLLOW UP URGENTLY] [FOLLOW UP] [WAIT FOR MORE INFO] [DEPRIORITIZE] [DECLINE]
 
-Be specific. Pull exact numbers. Flag anything that needs negotiation.`;
+Keep it tight and skimmable — this goes to a phone. No section headers, no tables, no long breakdowns. Pull exact numbers but don't over-explain.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

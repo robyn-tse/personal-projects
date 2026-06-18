@@ -62,24 +62,46 @@ const actionEmoji = {
   '[DECLINE]': ':no_entry:',
 };
 
+// Parse the concise WHO / SUMMARY / NEXT STEPS / ACTION format (multi-line aware)
+function parseConcise(text) {
+  const out = { WHO: '', SUMMARY: '', 'NEXT STEPS': '', ACTION: '' };
+  let current = null;
+  for (const line of (text || '').split('\n')) {
+    const m = line.match(/^\s*(WHO|SUMMARY|NEXT STEPS|ACTION)\s*:\s*(.*)$/i);
+    if (m) {
+      current = m[1].toUpperCase();
+      out[current] = m[2].trim();
+    } else if (current && line.trim()) {
+      out[current] += (out[current] ? ' ' : '') + line.trim();
+    }
+  }
+  return out;
+}
+
 function resultBlocks(r, now) {
+  const f = parseConcise(r.evaluation);
+
   let action = ':blue_circle:';
   for (const [key, emoji] of Object.entries(actionEmoji)) {
-    if (r.evaluation?.includes(key)) { action = emoji; break; }
+    if (f.ACTION.includes(key)) { action = emoji; break; }
   }
 
-  const attachmentNote = r.attachments?.length > 0
-    ? `:paperclip: ${r.attachments.map(a => a.filename).join(', ')}`
-    : 'No attachments';
+  const who = f.WHO || r.subject || '(unknown)';
+  const lines = [`${action} *${who}*`];
+  if (f.SUMMARY) lines.push(`*Summary:* ${f.SUMMARY}`);
+  if (f['NEXT STEPS']) lines.push(`*Next steps:* ${f['NEXT STEPS']}`);
+  // Fallback if the model didn't follow the format
+  if (!f.SUMMARY && !f['NEXT STEPS']) {
+    lines.push((r.evaluation || '_No evaluation available_').slice(0, 1500));
+  }
 
-  const body = r.evaluation
-    ? r.evaluation.slice(0, 2900) + (r.evaluation.length > 2900 ? '\n_(truncated — see log)_' : '')
-    : '_No evaluation available_';
+  const ctxBits = [r.category || 'OTHER'];
+  if (r.attachments?.length) ctxBits.push(`:paperclip: ${r.attachments.map(a => a.filename).join(', ')}`);
+  ctxBits.push(`swept ${now}`);
 
   return [
-    { type: 'section', text: { type: 'mrkdwn', text: `${action} *${r.subject || '(no subject)'}*\nFrom: ${r.from}\n${attachmentNote}` } },
-    { type: 'section', text: { type: 'mrkdwn', text: body } },
-    { type: 'context', elements: [{ type: 'mrkdwn', text: `${(r.category || 'OTHER')} · swept ${now}` }] },
+    { type: 'section', text: { type: 'mrkdwn', text: lines.join('\n') } },
+    { type: 'context', elements: [{ type: 'mrkdwn', text: ctxBits.join(' · ') }] },
     { type: 'divider' },
   ];
 }

@@ -81,19 +81,30 @@ npm run sweep
 ## How ongoing sweeps work
 
 Once a sweep has run, **future replies auto-flow in**: anything new in the `wedding`
-Gmail label is caught on the next sweep and evaluated, while threads already seen are
+Gmail label is caught on the next sweep and evaluated, while replies already seen are
 skipped so you never get a duplicate digest or pay to re-evaluate the same email.
 
-- State is tracked in `logs/last-sweep.json` (`lastSweepAt` + `seenThreadIds`).
-- Each new thread is evaluated **once**, then remembered.
-- An empty sweep (no new threads) costs nothing — it just posts an "all quiet" note.
+- Dedup is **per-message** (`logs/last-sweep.json` → `seenMessageIds`), so a follow-up
+  reply inside an existing thread (e.g. a revised proposal in the same `RE:` chain) **is**
+  caught — not just brand-new threads.
+- For each thread it evaluates the latest **inbound** message, so your own sent replies
+  are never scored.
+- Each reply is evaluated **once**, then remembered.
+- An **empty sweep posts nothing** — no channel noise when there's nothing new.
 
-> ⚠️ **Note on follow-ups in the same thread:** dedup is currently per *thread*, so a
-> brand-new email thread is always caught, but a follow-up reply that lands inside a
-> thread already seen (e.g. a revised proposal in an existing `RE:` chain) is **not**
-> re-evaluated. If you want every new *message* evaluated (recommended for venue
-> negotiations), switch the dedup in `src/gmail.js` to track message IDs instead of
-> thread IDs.
+## Slack channel routing
+
+Each evaluated reply is classified (by Claude) and posted to the matching channel:
+
+| Category | Channel (`.env`) | What it is |
+|---|---|---|
+| VENUE | `SLACK_CHANNEL_VENUES` | wedding venues / locations |
+| VENDOR | `SLACK_CHANNEL_VENDORS` | photographer, florist, caterer, band/DJ, rentals… |
+| TRAVEL | `SLACK_CHANNEL_TRAVEL` | guest hotels / room blocks, flights, shuttles |
+| OTHER | `SLACK_CHANNEL_DEFAULT` | wedding planners + anything else; also bounces & overdue alerts |
+
+Channel values can be names (`venues`) or IDs (`C0123…`). **The bot must be a member of
+each channel** — invite it once per channel with `/invite @<bot>`.
 
 ---
 

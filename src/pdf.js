@@ -54,9 +54,16 @@ SUBJECT: ${subject}
 EMAIL BODY:
 ${body}${attachmentSection}
 
-Please analyze this response and return a structured evaluation with these sections:
+First, classify this correspondence. Begin your reply with a single line in exactly this format:
+CATEGORY: <one of VENUE, VENDOR, TRAVEL, OTHER>
+  - VENUE — a wedding venue / location being considered to host the event
+  - VENDOR — a service provider (photographer, videographer, florist, caterer, band/DJ, hair & makeup, rentals, cake, stationery, etc.)
+  - TRAVEL — guest accommodation / hotel room blocks, flights, shuttles, transportation
+  - OTHER — wedding planners, or anything that does not clearly fit the above
 
-1. SENDER & VENUE — who replied, which venue
+Then return a structured evaluation with these sections (for non-venue categories, adapt sections 3–4: assess fit and pricing relevant to that category rather than guest capacity):
+
+1. SENDER & VENUE — who replied, which venue/company
 2. PRICING SUMMARY — extract all prices mentioned, convert DKK to USD, present both. If no pricing, say so.
 3. CAPACITY FIT — can this venue host ${GUEST_MIN}–${GUEST_MAX} guests for the full weekend format? Any limitations?
 4. BUDGET FIT — does total pricing fit within ${BUDGET_DKK.toLocaleString()} DKK / $${BUDGET_USD.toLocaleString()} USD? Flag if over.

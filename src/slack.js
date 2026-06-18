@@ -1,6 +1,16 @@
 /**
- * slack.js — Send digest to your personal Slack DM
- * Handles: new replies, bounces, overdue outreach alerts
+ * slack.js — Route the digest to category channels.
+ *
+ * Each evaluated reply is posted to the channel for its category:
+ *   VENUE  → SLACK_CHANNEL_VENUES
+ *   VENDOR → SLACK_CHANNEL_VENDORS
+ *   TRAVEL → SLACK_CHANNEL_TRAVEL
+ *   OTHER  → SLACK_CHANNEL_DEFAULT  (planners, anything else)
+ * Bounces + overdue alerts go to SLACK_CHANNEL_DEFAULT.
+ *
+ * Channel values may be names ("venues") or IDs ("C0123…"). The bot must be a
+ * member of each channel — invite it once with `/invite @<bot>` in each channel.
+ * Empty sweeps post nothing (no channel noise).
  */
 
 import 'dotenv/config';
@@ -19,141 +29,103 @@ async function slackPost(endpoint, body) {
   return res.json();
 }
 
-async function getDmChannel() {
-  const res = await slackPost('conversations.open', { users: process.env.SLACK_USER_ID });
-  if (!res.ok) throw new Error(`Slack DM open failed: ${res.error}`);
-  return res.channel.id;
+function channelFor(category) {
+  const map = {
+    VENUE: process.env.SLACK_CHANNEL_VENUES,
+    VENDOR: process.env.SLACK_CHANNEL_VENDORS,
+    TRAVEL: process.env.SLACK_CHANNEL_TRAVEL,
+  };
+  return map[category] || process.env.SLACK_CHANNEL_DEFAULT;
+}
+
+async function postBlocks(channel, blocks, fallbackText) {
+  if (!channel) {
+    console.warn('  ⚠️ Slack: no channel configured (check SLACK_CHANNEL_* in .env)');
+    return { ok: false, error: 'no_channel' };
+  }
+  const res = await slackPost('chat.postMessage', { channel, blocks, text: fallbackText });
+  if (!res.ok) {
+    if (res.error === 'not_in_channel' || res.error === 'channel_not_found') {
+      console.warn(`  ⚠️ Slack: couldn't post to "${channel}" (${res.error}). Invite the bot to that channel: "/invite @<bot>".`);
+    } else {
+      console.warn(`  ⚠️ Slack post to "${channel}" failed: ${res.error}`);
+    }
+  }
+  return res;
+}
+
+const actionEmoji = {
+  '[FOLLOW UP URGENTLY]': ':red_circle:',
+  '[FOLLOW UP]': ':yellow_circle:',
+  '[WAIT FOR MORE INFO]': ':blue_circle:',
+  '[DEPRIORITIZE]': ':white_circle:',
+  '[DECLINE]': ':no_entry:',
+};
+
+function resultBlocks(r, now) {
+  let action = ':blue_circle:';
+  for (const [key, emoji] of Object.entries(actionEmoji)) {
+    if (r.evaluation?.includes(key)) { action = emoji; break; }
+  }
+
+  const attachmentNote = r.attachments?.length > 0
+    ? `:paperclip: ${r.attachments.map(a => a.filename).join(', ')}`
+    : 'No attachments';
+
+  const body = r.evaluation
+    ? r.evaluation.slice(0, 2900) + (r.evaluation.length > 2900 ? '\n_(truncated — see log)_' : '')
+    : '_No evaluation available_';
+
+  return [
+    { type: 'section', text: { type: 'mrkdwn', text: `${action} *${r.subject || '(no subject)'}*\nFrom: ${r.from}\n${attachmentNote}` } },
+    { type: 'section', text: { type: 'mrkdwn', text: body } },
+    { type: 'context', elements: [{ type: 'mrkdwn', text: `${(r.category || 'OTHER')} · swept ${now}` }] },
+    { type: 'divider' },
+  ];
 }
 
 export async function sendSlackDigest({ results = [], bounces = [], overdue = [] }) {
-  const channelId = await getDmChannel();
   const now = new Date().toLocaleString('en-US', {
     timeZone: 'America/New_York',
     dateStyle: 'medium',
     timeStyle: 'short',
   });
 
-  const totalAlerts = results.length + bounces.length + overdue.length;
-
-  if (totalAlerts === 0) {
-    await slackPost('chat.postMessage', {
-      channel: channelId,
-      text: `💍 *Wedding Monitor — ${now}*\n\nAll quiet. No new replies, no bounces, no overdue outreach.`,
-    });
+  const total = results.length + bounces.length + overdue.length;
+  if (total === 0) {
+    console.log('No new items — staying quiet (no Slack post).');
     return;
   }
 
-  // Header
-  const headerParts = [];
-  if (results.length > 0) headerParts.push(`${results.length} new repl${results.length > 1 ? 'ies' : 'y'}`);
-  if (bounces.length > 0) headerParts.push(`${bounces.length} bounce${bounces.length > 1 ? 's' : ''}`);
-  if (overdue.length > 0) headerParts.push(`${overdue.length} overdue`);
+  const counts = {};
 
-  await slackPost('chat.postMessage', {
-    channel: channelId,
-    blocks: [
-      {
-        type: 'header',
-        text: { type: 'plain_text', text: `💍 Wedding Monitor — ${headerParts.join(' · ')}` },
-      },
-      {
-        type: 'context',
-        elements: [{ type: 'mrkdwn', text: `Swept at ${now}` }],
-      },
-      { type: 'divider' },
-    ],
-  });
-
-  // ── Bounces ────────────────────────────────────────────────────────────────
-  if (bounces.length > 0) {
-    await slackPost('chat.postMessage', {
-      channel: channelId,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*:x: Bounced emails — action required*\nThese emails failed to deliver. Check the address and resend.`,
-          },
-        },
-        ...bounces.map(b => ({
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `• *${b.subject || '(no subject)'}*\n  From: ${b.from}`,
-          },
-        })),
-        { type: 'divider' },
-      ],
-    });
-  }
-
-  // ── Overdue ────────────────────────────────────────────────────────────────
-  if (overdue.length > 0) {
-    await slackPost('chat.postMessage', {
-      channel: channelId,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*:alarm_clock: No reply after ${process.env.NUDGE_HOURS || 36} hours*\nConsider following up or trying an alternative contact.`,
-          },
-        },
-        ...overdue.map(o => ({
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `• *${o.to}* — "${o.subject}"\n  Sent ${o.hoursElapsed}h ago`,
-          },
-        })),
-        { type: 'divider' },
-      ],
-    });
-  }
-
-  // ── New replies ────────────────────────────────────────────────────────────
-  const actionEmoji = {
-    '[FOLLOW UP URGENTLY]': ':red_circle:',
-    '[FOLLOW UP]': ':yellow_circle:',
-    '[WAIT FOR MORE INFO]': ':blue_circle:',
-    '[DEPRIORITIZE]': ':white_circle:',
-    '[DECLINE]': ':no_entry:',
-  };
-
+  // Route each evaluated reply to its category channel
   for (const r of results) {
-    let action = ':blue_circle:';
-    for (const [key, emoji] of Object.entries(actionEmoji)) {
-      if (r.evaluation?.includes(key)) { action = emoji; break; }
-    }
-
-    const attachmentNote = r.attachments?.length > 0
-      ? `:paperclip: ${r.attachments.map(a => a.filename).join(', ')}`
-      : 'No attachments';
-
-    await slackPost('chat.postMessage', {
-      channel: channelId,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `${action} *${r.subject || '(no subject)'}*\nFrom: ${r.from}\n${attachmentNote}`,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: r.evaluation
-              ? r.evaluation.slice(0, 2900) + (r.evaluation.length > 2900 ? '\n_(truncated — see log)_' : '')
-              : '_No evaluation available_',
-          },
-        },
-        { type: 'divider' },
-      ],
-    });
+    const channel = channelFor(r.category);
+    const res = await postBlocks(channel, resultBlocks(r, now), `New ${(r.category || 'other').toLowerCase()} reply: ${r.subject || ''}`);
+    if (res.ok) counts[r.category] = (counts[r.category] || 0) + 1;
   }
 
-  console.log(`✓ Slack digest sent — ${results.length} replies, ${bounces.length} bounces, ${overdue.length} overdue`);
+  const defaultChannel = process.env.SLACK_CHANNEL_DEFAULT;
+
+  // Bounces → default channel
+  if (bounces.length > 0) {
+    await postBlocks(defaultChannel, [
+      { type: 'section', text: { type: 'mrkdwn', text: `*:x: Bounced emails — action required*\nThese failed to deliver. Check the address and resend.` } },
+      ...bounces.map(b => ({ type: 'section', text: { type: 'mrkdwn', text: `• *${b.subject || '(no subject)'}*\n  From: ${b.from}` } })),
+      { type: 'divider' },
+    ], 'Bounced emails');
+  }
+
+  // Overdue → default channel
+  if (overdue.length > 0) {
+    await postBlocks(defaultChannel, [
+      { type: 'section', text: { type: 'mrkdwn', text: `*:alarm_clock: No reply after ${process.env.NUDGE_HOURS || 36} hours*` } },
+      ...overdue.map(o => ({ type: 'section', text: { type: 'mrkdwn', text: `• *${o.to}* — "${o.subject}"\n  Sent ${o.hoursElapsed}h ago` } })),
+      { type: 'divider' },
+    ], 'Overdue outreach');
+  }
+
+  const summary = Object.entries(counts).map(([c, n]) => `${n} ${c.toLowerCase()}`).join(', ') || 'none';
+  console.log(`✓ Slack digest routed — replies: ${summary}; ${bounces.length} bounces, ${overdue.length} overdue`);
 }

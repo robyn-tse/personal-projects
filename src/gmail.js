@@ -1,6 +1,10 @@
 /**
  * gmail.js — Gmail reader for the wedding label
- * Returns new threads since last sweep, with attachment buffers
+ * Returns new replies since last sweep, with attachment buffers.
+ *
+ * Dedup is per-MESSAGE (not per-thread): a follow-up reply inside an existing
+ * thread is caught on the next sweep. For each thread we evaluate the latest
+ * INBOUND message (i.e. not one you sent), so your own replies don't get scored.
  */
 
 import { google } from 'googleapis';
@@ -23,8 +27,9 @@ function getOAuth2Client() {
 }
 
 function loadState() {
-  if (!existsSync(STATE_PATH)) return { lastSweepAt: null, seenThreadIds: [] };
-  return JSON.parse(readFileSync(STATE_PATH, 'utf8'));
+  if (!existsSync(STATE_PATH)) return { lastSweepAt: null, seenMessageIds: [] };
+  const s = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
+  return { lastSweepAt: s.lastSweepAt || null, seenMessageIds: s.seenMessageIds || [] };
 }
 
 function saveState(state) {
@@ -33,6 +38,15 @@ function saveState(state) {
 
 function decodeBase64(data) {
   return Buffer.from(data.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+}
+
+function header(message, name) {
+  return (message.payload.headers || []).find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+}
+
+function isFromMe(message) {
+  const me = (process.env.GMAIL_ADDRESS || '').toLowerCase();
+  return me && header(message, 'from').toLowerCase().includes(me);
 }
 
 function extractBody(payload) {
@@ -86,7 +100,8 @@ export async function fetchWeddingThreads() {
     console.log(`✓ Label created: ${label} (${labelId})`);
   }
 
-  // Fetch threads with this label
+  // Threads with activity since the last sweep (catches new threads AND new
+  // replies in existing threads). On the first run, fetch everything in the label.
   const query = state.lastSweepAt
     ? `after:${Math.floor(new Date(state.lastSweepAt).getTime() / 1000)}`
     : '';
@@ -99,41 +114,32 @@ export async function fetchWeddingThreads() {
   });
 
   const threads = threadsRes.data.threads || [];
-  const newThreadIds = threads
-    .map(t => t.id)
-    .filter(id => !state.seenThreadIds.includes(id));
-
-  if (newThreadIds.length === 0) {
-    console.log('No new wedding threads since last sweep.');
-    saveState({ ...state, lastSweepAt: new Date().toISOString() });
-    return [];
-  }
-
-  console.log(`Found ${newThreadIds.length} new thread(s) in label "${label}"`);
-
   const results = [];
+  const newlySeen = [];
 
-  for (const threadId of newThreadIds) {
-    const threadRes = await gmail.users.threads.get({ userId: 'me', id: threadId, format: 'full' });
+  for (const t of threads) {
+    const threadRes = await gmail.users.threads.get({ userId: 'me', id: t.id, format: 'full' });
     const messages = threadRes.data.messages || [];
+    if (messages.length === 0) continue;
 
-    // We only care about the latest message in the thread (the reply)
-    const latest = messages[messages.length - 1];
-    const headers = latest.payload.headers || [];
-    const get = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+    // Evaluate the latest INBOUND message (skip threads where you spoke last / only you).
+    const latest = [...messages].reverse().find(m => !isFromMe(m));
+    if (!latest) continue;
 
-    const from = get('from');
-    const subject = get('subject');
-    const date = get('date');
+    // Per-message dedup: skip if we've already evaluated this exact reply.
+    if (state.seenMessageIds.includes(latest.id)) continue;
+
+    const from = header(latest, 'from');
+    const subject = header(latest, 'subject');
+    const date = header(latest, 'date');
     const body = extractBody(latest.payload);
 
-    // Download attachments
+    // Download PDF/doc attachments
     const attachmentMeta = extractAttachmentMeta(latest.payload);
     const attachments = [];
-
     for (const meta of attachmentMeta) {
       if (!meta.mimeType.includes('pdf') && !meta.mimeType.includes('word') && !meta.mimeType.includes('document')) {
-        continue; // only pull PDFs and docs
+        continue;
       }
       try {
         const attRes = await gmail.users.messages.attachments.get({
@@ -149,13 +155,19 @@ export async function fetchWeddingThreads() {
       }
     }
 
-    results.push({ threadId, from, subject, date, body, attachments, messageCount: messages.length });
+    results.push({ threadId: t.id, messageId: latest.id, from, subject, date, body, attachments, messageCount: messages.length });
+    newlySeen.push(latest.id);
   }
 
-  // Update state
+  if (results.length === 0) {
+    console.log('No new wedding replies since last sweep.');
+  } else {
+    console.log(`Found ${results.length} new repl${results.length > 1 ? 'ies' : 'y'} in label "${label}"`);
+  }
+
   saveState({
     lastSweepAt: new Date().toISOString(),
-    seenThreadIds: [...state.seenThreadIds, ...newThreadIds],
+    seenMessageIds: [...state.seenMessageIds, ...newlySeen],
   });
 
   return results;

@@ -74,16 +74,22 @@ async function sweep() {
 
     // 4. Evaluate with Claude
     console.log(`  Evaluating with Claude...`);
-    const evaluation = await evaluateWithClaude({
+    const rawEval = await evaluateWithClaude({
       from: thread.from,
       subject: thread.subject,
       body: thread.body,
       pdfTexts,
     });
 
-    results.push({ ...thread, pdfTexts, evaluation });
+    // Pull the CATEGORY classification off the top, then clean it from the displayed text
+    const catMatch = rawEval.match(/CATEGORY:\s*(VENUE|VENDOR|TRAVEL|OTHER)/i);
+    const category = catMatch ? catMatch[1].toUpperCase() : 'OTHER';
+    const evaluation = rawEval.replace(/^\s*CATEGORY:.*(\r?\n)?/im, '').trim();
+
+    results.push({ ...thread, pdfTexts, evaluation, category });
 
     // Print to console too
+    console.log(`  Category: ${category}`);
     console.log('\n' + evaluation + '\n');
     console.log('──────────────────────────────────────────────────────────');
   }
@@ -92,6 +98,8 @@ async function sweep() {
   const logFile = path.join(LOGS_DIR, `sweep-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
   writeFileSync(logFile, JSON.stringify(results.map(r => ({
     threadId: r.threadId,
+    messageId: r.messageId,
+    category: r.category,
     from: r.from,
     subject: r.subject,
     date: r.date,

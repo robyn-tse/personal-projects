@@ -1,0 +1,16 @@
+{
+  "name": "wedding-monitor",
+  "version": "1.0.0",
+  "description": "Wedding ops automation — venue replies, RSVPs, vendors",
+  "type": "module",
+  "scripts": {
+    "sweep": "node src/sweep.js",
+    "send": "node src/send-outreach.js"
+  },
+  "dependencies": {
+    "googleapis": "^140.0.0",
+    "pdf-parse": "^1.1.1",
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.4.5"
+  }
+}

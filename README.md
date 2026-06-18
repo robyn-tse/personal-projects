@@ -78,19 +78,41 @@ npm run sweep
 
 ---
 
+## How ongoing sweeps work
+
+Once a sweep has run, **future replies auto-flow in**: anything new in the `wedding`
+Gmail label is caught on the next sweep and evaluated, while threads already seen are
+skipped so you never get a duplicate digest or pay to re-evaluate the same email.
+
+- State is tracked in `logs/last-sweep.json` (`lastSweepAt` + `seenThreadIds`).
+- Each new thread is evaluated **once**, then remembered.
+- An empty sweep (no new threads) costs nothing — it just posts an "all quiet" note.
+
+> ⚠️ **Note on follow-ups in the same thread:** dedup is currently per *thread*, so a
+> brand-new email thread is always caught, but a follow-up reply that lands inside a
+> thread already seen (e.g. a revised proposal in an existing `RE:` chain) is **not**
+> re-evaluated. If you want every new *message* evaluated (recommended for venue
+> negotiations), switch the dedup in `src/gmail.js` to track message IDs instead of
+> thread IDs.
+
+---
+
 ## Adding cron (when ready)
 
-Mac/Linux — open crontab:
+The quickest way — run the helper from the project root (sets it to every 2 hours):
 ```bash
-crontab -e
+./setup-cron.sh
 ```
 
-Add this line (runs every 2 hours):
+It finds your `node` path, creates `logs/`, and installs the cron entry for you
+(replacing any previous one). The sweep then runs every 2 hours **whenever your
+laptop is awake** (cron skips runs while the machine is asleep — that's fine).
+
+To do it manually instead — `crontab -e`, then add (runs every 2 hours):
 ```
 0 */2 * * * cd /path/to/wedding-monitor && /usr/local/bin/node src/sweep.js >> logs/cron.log 2>&1
 ```
-
-Find your node path: `which node`
+Find your node path with `which node`. Watch output with `tail -f logs/cron.log`.
 
 ---
 

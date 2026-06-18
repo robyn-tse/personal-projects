@@ -87,3 +87,48 @@ Keep it tight and skimmable — this goes to a phone. No section headers, no tab
   const data = await response.json();
   return data.content?.[0]?.text || '[No evaluation returned]';
 }
+
+/**
+ * Read all correspondence with one contact (possibly across several threads) and
+ * judge what genuinely still needs attention — catching "they replied but dodged
+ * my question" and "a new thread doesn't resolve an old open item".
+ */
+export async function assessContactThreads({ name, transcript }) {
+  const prompt = `You track wedding-planning correspondence and tell me what still needs MY attention.
+
+CONTACT: ${name}
+
+Below is the full back-and-forth across ALL email threads with this contact (oldest first). "ME" = me (Robyn); "THEM" = the contact.
+
+${transcript}
+
+Judge the CURRENT state across everything above, then output EXACTLY these three lines:
+
+STATUS: <one of NEEDS MY ATTENTION | WAITING ON THEM | NO OPEN ITEMS>
+OPEN ITEM: <the specific question or item that's actually still open — name it concretely; "none" if nothing is pending>
+NEXT: <one short sentence: the single best next action for me>
+
+Rules:
+- "NEEDS MY ATTENTION" = they're waiting on a reply from me, OR I asked something they never actually answered and I should follow up (e.g. they replied but dodged or ignored my question — even if in a different thread).
+- "WAITING ON THEM" = I've asked something they haven't answered yet and the ball is legitimately with them (no action needed from me right now).
+- "NO OPEN ITEMS" = nothing is pending either way.
+- A newer email from them does NOT automatically resolve an earlier unanswered question. Judge by whether the actual question was addressed, not by who emailed last.
+- Be concise and specific.`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  const data = await response.json();
+  return data.content?.[0]?.text || '';
+}

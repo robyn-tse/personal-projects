@@ -116,12 +116,15 @@ Each card leads with a colored circle = the recommended action:
 
 Posts a "what needs my attention" overview to `SLACK_CHANNEL_DEFAULT`:
 
-- **🔴 Your turn** — they replied last, you haven't responded yet
-- **🟢 Waiting on them** — you replied last
+- **🔴 Needs your attention** — they're waiting on you, OR you asked something they never actually answered
+- **🟢 Waiting on them** — you asked, the ball is legitimately with them
+- **✅ No open items** — nothing pending
 
-It reads who acted last in each thread straight from Gmail, so it's always current.
-`setup-cron.sh` schedules it daily at 10:00 (laptop local time); run `npm run status`
-anytime for an on-demand check.
+It groups every thread by contact and has Claude read each contact's full
+correspondence to judge what's *genuinely* open — so it catches "they replied but
+dodged my question" and won't treat a new email as resolving an earlier one. (Reads
+message bodies, so it costs a little per run.) `setup-cron.sh` schedules it daily at
+10:00 (laptop local time); run `npm run status` anytime for an on-demand check.
 
 ---
 

@@ -153,41 +153,35 @@ export async function sendSlackDigest({ results = [], bounces = [], overdue = []
   console.log(`✓ Slack digest routed — replies: ${summary}; ${bounces.length} bounces, ${overdue.length} overdue`);
 }
 
-// "Name <email>" → Name (or email if no name)
-function prettyName(from) {
-  const m = (from || '').match(/^\s*"?([^"<]+?)"?\s*<([^>]+)>/);
-  if (m) return (m[1].trim() || m[2].trim());
-  return (from || '').replace(/[<>]/g, '').trim() || '(unknown)';
-}
-
-function daysAgo(dateStr) {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return null;
-  return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
-}
-
-// Daily status board: who needs a response vs who you're waiting on.
-export async function sendStatusBoard(items = []) {
+// Semantic status board: Claude has judged, per contact, what genuinely needs attention.
+// `assessments`: [{ name, status, openItem, next }] where status is one of
+// 'NEEDS MY ATTENTION' | 'WAITING ON THEM' | 'NO OPEN ITEMS'.
+export async function sendStatusBoard(assessments = []) {
   const channel = process.env.SLACK_CHANNEL_DEFAULT;
   const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium' });
 
-  const byOldest = (a, b) => (daysAgo(b.lastDate) || 0) - (daysAgo(a.lastDate) || 0);
-  const yourTurn = items.filter(i => !i.lastFromMe).sort(byOldest);
-  const waiting = items.filter(i => i.lastFromMe).sort(byOldest);
+  const needs = assessments.filter(a => a.status === 'NEEDS MY ATTENTION');
+  const waiting = assessments.filter(a => a.status === 'WAITING ON THEM');
+  const clear = assessments.filter(a => a.status === 'NO OPEN ITEMS');
 
-  const fmt = (i) => {
-    const age = daysAgo(i.lastDate);
-    return `• *${prettyName(i.counterparty)}* — ${i.subject || '(no subject)'}${age == null ? '' : ` _(${age}d ago)_`}`;
+  const detail = (a) => {
+    const item = a.openItem && a.openItem.toLowerCase() !== 'none' ? a.openItem : '';
+    const lines = [`• *${a.name}*${item ? ` — ${item}` : ''}`];
+    if (a.next) lines.push(`   _Next: ${a.next}_`);
+    return lines.join('\n');
   };
 
   const blocks = [
     { type: 'header', text: { type: 'plain_text', text: `💍 Wedding status — ${now}` } },
-    { type: 'section', text: { type: 'mrkdwn', text: `🔴 *Your turn — ${yourTurn.length}*  (they replied last)\n${yourTurn.length ? yourTurn.map(fmt).join('\n') : '_None — all caught up 🎉_'}` } },
-    { type: 'section', text: { type: 'mrkdwn', text: `🟢 *Waiting on them — ${waiting.length}*  (you replied last)\n${waiting.length ? waiting.map(fmt).join('\n') : '_None_'}` } },
-    { type: 'context', elements: [{ type: 'mrkdwn', text: `${items.length} active thread(s) in your Gmail "${process.env.GMAIL_LABEL || 'wedding'}" label` }] },
+    { type: 'section', text: { type: 'mrkdwn', text: `🔴 *Needs your attention — ${needs.length}*\n${needs.length ? needs.map(detail).join('\n') : '_None — all caught up 🎉_'}` } },
+    { type: 'section', text: { type: 'mrkdwn', text: `🟢 *Waiting on them — ${waiting.length}*\n${waiting.length ? waiting.map(detail).join('\n') : '_None_'}` } },
   ];
+  if (clear.length) {
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `✅ *No open items — ${clear.length}*\n${clear.map(a => a.name).join(', ')}` } });
+  }
+  blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: `${assessments.length} contact(s) · from your Gmail "${process.env.GMAIL_LABEL || 'wedding'}" label` }] });
 
   const res = await postBlocks(channel, blocks, 'Wedding status board');
-  if (res.ok) console.log(`✓ Status board sent — ${yourTurn.length} need a reply, ${waiting.length} waiting.`);
+  if (res.ok) console.log(`✓ Status board sent — ${needs.length} need attention, ${waiting.length} waiting, ${clear.length} clear.`);
   return res;
 }

@@ -54,12 +54,13 @@ async function postBlocks(channel, blocks, fallbackText) {
   return res;
 }
 
+// Priority signal from the recommended ACTION (uses literal emoji so Slack always renders them)
 const actionEmoji = {
-  '[FOLLOW UP URGENTLY]': ':red_circle:',
-  '[FOLLOW UP]': ':yellow_circle:',
-  '[WAIT FOR MORE INFO]': ':blue_circle:',
-  '[DEPRIORITIZE]': ':white_circle:',
-  '[DECLINE]': ':no_entry:',
+  '[FOLLOW UP URGENTLY]': '🔴',
+  '[FOLLOW UP]': '🟡',
+  '[WAIT FOR MORE INFO]': '🔵',
+  '[DEPRIORITIZE]': '⚪',
+  '[DECLINE]': '⛔',
 };
 
 // Parse the concise WHO / SUMMARY / NEXT STEPS / ACTION format (multi-line aware)
@@ -81,7 +82,7 @@ function parseConcise(text) {
 function resultBlocks(r, now) {
   const f = parseConcise(r.evaluation);
 
-  let action = ':blue_circle:';
+  let action = '🔵';
   for (const [key, emoji] of Object.entries(actionEmoji)) {
     if (f.ACTION.includes(key)) { action = emoji; break; }
   }
@@ -96,7 +97,7 @@ function resultBlocks(r, now) {
   }
 
   const ctxBits = [r.category || 'OTHER'];
-  if (r.attachments?.length) ctxBits.push(`:paperclip: ${r.attachments.map(a => a.filename).join(', ')}`);
+  if (r.attachments?.length) ctxBits.push(`📎 ${r.attachments.map(a => a.filename).join(', ')}`);
   ctxBits.push(`swept ${now}`);
 
   return [
@@ -133,7 +134,7 @@ export async function sendSlackDigest({ results = [], bounces = [], overdue = []
   // Bounces → default channel
   if (bounces.length > 0) {
     await postBlocks(defaultChannel, [
-      { type: 'section', text: { type: 'mrkdwn', text: `*:x: Bounced emails — action required*\nThese failed to deliver. Check the address and resend.` } },
+      { type: 'section', text: { type: 'mrkdwn', text: `*❌ Bounced emails — action required*\nThese failed to deliver. Check the address and resend.` } },
       ...bounces.map(b => ({ type: 'section', text: { type: 'mrkdwn', text: `• *${b.subject || '(no subject)'}*\n  From: ${b.from}` } })),
       { type: 'divider' },
     ], 'Bounced emails');
@@ -142,7 +143,7 @@ export async function sendSlackDigest({ results = [], bounces = [], overdue = []
   // Overdue → default channel
   if (overdue.length > 0) {
     await postBlocks(defaultChannel, [
-      { type: 'section', text: { type: 'mrkdwn', text: `*:alarm_clock: No reply after ${process.env.NUDGE_HOURS || 36} hours*` } },
+      { type: 'section', text: { type: 'mrkdwn', text: `*⏰ No reply after ${process.env.NUDGE_HOURS || 36} hours*` } },
       ...overdue.map(o => ({ type: 'section', text: { type: 'mrkdwn', text: `• *${o.to}* — "${o.subject}"\n  Sent ${o.hoursElapsed}h ago` } })),
       { type: 'divider' },
     ], 'Overdue outreach');
@@ -150,4 +151,43 @@ export async function sendSlackDigest({ results = [], bounces = [], overdue = []
 
   const summary = Object.entries(counts).map(([c, n]) => `${n} ${c.toLowerCase()}`).join(', ') || 'none';
   console.log(`✓ Slack digest routed — replies: ${summary}; ${bounces.length} bounces, ${overdue.length} overdue`);
+}
+
+// "Name <email>" → Name (or email if no name)
+function prettyName(from) {
+  const m = (from || '').match(/^\s*"?([^"<]+?)"?\s*<([^>]+)>/);
+  if (m) return (m[1].trim() || m[2].trim());
+  return (from || '').replace(/[<>]/g, '').trim() || '(unknown)';
+}
+
+function daysAgo(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
+}
+
+// Daily status board: who needs a response vs who you're waiting on.
+export async function sendStatusBoard(items = []) {
+  const channel = process.env.SLACK_CHANNEL_DEFAULT;
+  const now = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium' });
+
+  const byOldest = (a, b) => (daysAgo(b.lastDate) || 0) - (daysAgo(a.lastDate) || 0);
+  const yourTurn = items.filter(i => !i.lastFromMe).sort(byOldest);
+  const waiting = items.filter(i => i.lastFromMe).sort(byOldest);
+
+  const fmt = (i) => {
+    const age = daysAgo(i.lastDate);
+    return `• *${prettyName(i.counterparty)}* — ${i.subject || '(no subject)'}${age == null ? '' : ` _(${age}d ago)_`}`;
+  };
+
+  const blocks = [
+    { type: 'header', text: { type: 'plain_text', text: `💍 Wedding status — ${now}` } },
+    { type: 'section', text: { type: 'mrkdwn', text: `🔴 *Your turn — ${yourTurn.length}*  (they replied last)\n${yourTurn.length ? yourTurn.map(fmt).join('\n') : '_None — all caught up 🎉_'}` } },
+    { type: 'section', text: { type: 'mrkdwn', text: `🟢 *Waiting on them — ${waiting.length}*  (you replied last)\n${waiting.length ? waiting.map(fmt).join('\n') : '_None_'}` } },
+    { type: 'context', elements: [{ type: 'mrkdwn', text: `${items.length} active thread(s) in your Gmail "${process.env.GMAIL_LABEL || 'wedding'}" label` }] },
+  ];
+
+  const res = await postBlocks(channel, blocks, 'Wedding status board');
+  if (res.ok) console.log(`✓ Status board sent — ${yourTurn.length} need a reply, ${waiting.length} waiting.`);
+  return res;
 }

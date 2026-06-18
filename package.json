@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "sweep": "node src/sweep.js",
+    "status": "node src/status.js",
     "send": "node src/send-outreach.js"
   },
   "dependencies": {

@@ -173,6 +173,40 @@ export async function fetchWeddingThreads() {
   return results;
 }
 
+// Lightweight overview of every thread in the wedding label (for the status board).
+// Uses metadata format (no bodies/attachments downloaded) so it's fast and cheap.
+export async function fetchWeddingThreadSummaries() {
+  const auth = getOAuth2Client();
+  const gmail = google.gmail({ version: 'v1', auth });
+  const label = process.env.GMAIL_LABEL || 'wedding';
+
+  const labelsRes = await gmail.users.labels.list({ userId: 'me' });
+  const labelId = (labelsRes.data.labels || []).find(l => l.name.toLowerCase() === label.toLowerCase())?.id;
+  if (!labelId) return [];
+
+  const res = await gmail.users.threads.list({ userId: 'me', labelIds: [labelId], maxResults: 100 });
+  const out = [];
+
+  for (const t of res.data.threads || []) {
+    const tr = await gmail.users.threads.get({
+      userId: 'me', id: t.id, format: 'metadata',
+      metadataHeaders: ['From', 'Subject', 'Date'],
+    });
+    const msgs = tr.data.messages || [];
+    if (msgs.length === 0) continue;
+    const last = msgs[msgs.length - 1];
+    const inbound = [...msgs].reverse().find(m => !isFromMe(m));
+    out.push({
+      threadId: t.id,
+      subject: header(last, 'Subject'),
+      counterparty: inbound ? header(inbound, 'From') : header(last, 'From'),
+      lastFromMe: isFromMe(last),
+      lastDate: header(last, 'Date'),
+    });
+  }
+  return out;
+}
+
 export async function sendEmail({ to, subject, body, labelName }) {
   const auth = getOAuth2Client();
   const gmail = google.gmail({ version: 'v1', auth });

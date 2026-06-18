@@ -106,6 +106,23 @@ Each evaluated reply is classified (by Claude) and posted to the matching channe
 Channel values can be names (`venues`) or IDs (`C0123…`). **The bot must be a member of
 each channel** — invite it once per channel with `/invite @<bot>`.
 
+Each card leads with a colored circle = the recommended action:
+
+| 🔴 | 🟡 | 🔵 | ⚪ | ⛔ |
+|---|---|---|---|---|
+| Follow up urgently | Follow up | Wait for more info | Deprioritize | Decline |
+
+## Status board (`npm run status`)
+
+Posts a "what needs my attention" overview to `SLACK_CHANNEL_DEFAULT`:
+
+- **🔴 Your turn** — they replied last, you haven't responded yet
+- **🟢 Waiting on them** — you replied last
+
+It reads who acted last in each thread straight from Gmail, so it's always current.
+`setup-cron.sh` schedules it daily at 10:00 (laptop local time); run `npm run status`
+anytime for an on-demand check.
+
 ---
 
 ## Adding cron (when ready)

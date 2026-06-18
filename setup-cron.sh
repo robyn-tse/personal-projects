@@ -16,14 +16,18 @@ if [ ! -f "$DIR/.env" ]; then
 fi
 
 mkdir -p "$DIR/logs"
-CRON_LINE="0 */2 * * * cd $DIR && $NODE src/sweep.js >> $DIR/logs/cron.log 2>&1"
+SWEEP_LINE="0 */2 * * * cd $DIR && $NODE src/sweep.js >> $DIR/logs/cron.log 2>&1"
+STATUS_LINE="0 10 * * * cd $DIR && $NODE src/status.js >> $DIR/logs/cron.log 2>&1"
 
-# Replace any existing sweep entry, keep everything else
-( crontab -l 2>/dev/null | grep -v "src/sweep.js" || true; echo "$CRON_LINE" ) | crontab -
+# Replace any existing sweep/status entries, keep everything else
+( crontab -l 2>/dev/null | grep -vE "src/(sweep|status)\.js" || true; echo "$SWEEP_LINE"; echo "$STATUS_LINE" ) | crontab -
 
-echo "✓ Scheduled — the sweep will run every 2 hours while your laptop is awake."
+echo "✓ Scheduled (while your laptop is awake):"
+echo "  • Sweep — every 2 hours"
+echo "  • Status board — daily at 10:00 (laptop local time)"
 echo
-echo "  $CRON_LINE"
+echo "  $SWEEP_LINE"
+echo "  $STATUS_LINE"
 echo
 echo "Useful commands:"
 echo "  crontab -l                 # see scheduled jobs"

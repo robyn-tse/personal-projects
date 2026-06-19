@@ -223,9 +223,18 @@ export async function sendEmail({ to, subject, body, labelName }) {
   const gmail = google.gmail({ version: 'v1', auth });
 
   const from = process.env.GMAIL_ADDRESS;
-  const raw = Buffer.from(
-    `From: ${from}\r\nTo: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`
-  ).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const subjectEnc = `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`;
+  const message = [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${subjectEnc}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(body, 'utf8').toString('base64'),
+  ].join('\r\n');
+  const raw = Buffer.from(message, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   const sent = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
 

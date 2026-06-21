@@ -218,6 +218,40 @@ export async function fetchWeddingConversations() {
   return out;
 }
 
+// Which recipient domains have actually replied? Scans every thread in the
+// wedding label and records, per domain, the timestamp of its most recent
+// INBOUND (not-from-me) message. Used to reconcile the outreach queue so a
+// venue that already replied isn't nudged as "overdue" — independent of what
+// happened to be fetched in the current sweep. Metadata-only (no bodies/
+// attachments), so it's cheap to run.
+export async function fetchRepliedDomains() {
+  const auth = getOAuth2Client();
+  const gmail = google.gmail({ version: 'v1', auth });
+  const label = process.env.GMAIL_LABEL || 'wedding';
+
+  const labelsRes = await gmail.users.labels.list({ userId: 'me' });
+  const labelId = (labelsRes.data.labels || []).find(l => l.name.toLowerCase() === label.toLowerCase())?.id;
+  if (!labelId) return new Map();
+
+  const res = await gmail.users.threads.list({ userId: 'me', labelIds: [labelId], maxResults: 100 });
+  const domains = new Map(); // domain -> ISO date of most recent inbound message
+
+  for (const t of res.data.threads || []) {
+    const tr = await gmail.users.threads.get({
+      userId: 'me', id: t.id, format: 'metadata', metadataHeaders: ['From'],
+    });
+    for (const m of tr.data.messages || []) {
+      if (isFromMe(m)) continue;
+      const domain = header(m, 'from').toLowerCase().match(/@([^>\s]+)/)?.[1];
+      if (!domain) continue;
+      const iso = m.internalDate ? new Date(Number(m.internalDate)).toISOString() : new Date().toISOString();
+      const prev = domains.get(domain);
+      if (!prev || iso > prev) domains.set(domain, iso); // ISO strings sort chronologically
+    }
+  }
+  return domains;
+}
+
 export async function sendEmail({ to, subject, body, labelName }) {
   const auth = getOAuth2Client();
   const gmail = google.gmail({ version: 'v1', auth });

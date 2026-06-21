@@ -42,7 +42,7 @@ async function sweep() {
   }
 
   // 1b. Check for overdue outreach (no reply after 36h)
-  const overdue = checkOverdueOutreach(threads);
+  const overdue = await checkOverdueOutreach();
   if (overdue.length > 0) {
     const nudgeHours = process.env.NUDGE_HOURS || 36;
     console.log('\n⏰  ' + overdue.length + ' overdue (no reply after ' + nudgeHours + 'h)');

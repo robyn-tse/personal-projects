@@ -16,7 +16,7 @@ import 'dotenv/config';
 import { writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { fetchWeddingThreads } from './gmail.js';
+import { fetchWeddingThreads, fetchWeddingConversations } from './gmail.js';
 import { parsePdfBuffer, evaluateWithClaude } from './pdf.js';
 import { sendSlackDigest } from './slack.js';
 import { detectBounces, checkOverdueOutreach } from './alerts.js';
@@ -42,7 +42,7 @@ async function sweep() {
   }
 
   // 1b. Check for overdue outreach (no reply after 36h)
-  const overdue = checkOverdueOutreach(threads);
+  const overdue = checkOverdueOutreach(await fetchWeddingConversations());
   if (overdue.length > 0) {
     const nudgeHours = process.env.NUDGE_HOURS || 36;
     console.log('\n⏰  ' + overdue.length + ' overdue (no reply after ' + nudgeHours + 'h)');

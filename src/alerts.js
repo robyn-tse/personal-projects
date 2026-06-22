@@ -39,55 +39,40 @@ export function detectBounces(threads) {
   });
 }
 
-export function checkOverdueOutreach(threads) {
+export function checkOverdueOutreach(conversations = []) {
   if (!existsSync(QUEUE_PATH)) return [];
   const queue = JSON.parse(readFileSync(QUEUE_PATH, 'utf8'));
 
-  // Load seen thread metadata to check for replies
-  let seenThreads = [];
-  if (existsSync(STATE_PATH)) {
-    const state = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
-    seenThreads = state.seenThreadIds || [];
-  }
-
-  // Build a set of reply signals from threads fetched this sweep
-  // A reply matches if the thread subject contains "Re:" + original subject words
-  // OR the sender domain matches the outreach recipient domain
-  const replySignals = threads.map(t => ({
-    subjectLower: (t.subject || '').toLowerCase(),
-    fromDomain: t.from.split('@')[1]?.split('>')[0]?.toLowerCase() || '',
-  }));
+  // Index live wedding-label conversations by the contact's domain.
+  // A venue that's been un-labeled (e.g. rejected) simply won't appear here,
+  // and a venue that replied will have an inbound message as its latest.
+  const byDomain = new Map();
+  for (const c of conversations) byDomain.set(c.counterpartyDomain, c);
 
   const now = Date.now();
   const overdue = [];
 
   for (const item of queue) {
-    if (!item.sentAt || item.repliedAt || item.dismissed) continue;
+    if (!item.sentAt || item.dismissed || item.repliedAt || !item.to) continue;
 
-    const sentMs = new Date(item.sentAt).getTime();
-    const hoursElapsed = (now - sentMs) / (1000 * 60 * 60);
+    const domain = item.to.split('@')[1]?.toLowerCase() || '';
+    const conv = byDomain.get(domain);
+    if (!conv) continue;                  // no longer in the wedding label → rejected/removed, not overdue
+    const last = conv.messages[conv.messages.length - 1];
+    if (!last || !last.fromMe) continue;  // latest message isn't mine → they replied, not overdue
 
+    const lastMs = new Date(last.date).getTime();
+    const baseMs = isNaN(lastMs) ? new Date(item.sentAt).getTime() : lastMs;
+    const hoursElapsed = (now - baseMs) / (1000 * 60 * 60);
     if (hoursElapsed < NUDGE_HOURS) continue;
 
-    // Check if we've seen a reply (heuristic matching)
-    const recipientDomain = item.to.split('@')[1]?.toLowerCase() || '';
-    const originalSubjectWords = item.subject.toLowerCase().split(' ').filter(w => w.length > 3);
-
-    const hasReply = replySignals.some(signal =>
-      signal.fromDomain === recipientDomain ||
-      originalSubjectWords.some(word => signal.subjectLower.includes(word))
-    );
-
-    if (!hasReply) {
-      overdue.push({
-        id: item.id,
-        to: item.to,
-        subject: item.subject,
-        sentAt: item.sentAt,
-        hoursElapsed: Math.round(hoursElapsed),
-        category: item.category || 'unknown',
-      });
-    }
+    overdue.push({
+      id: item.id,
+      to: item.to,
+      subject: item.subject,
+      hoursElapsed: Math.round(hoursElapsed),
+      category: item.category || 'venue',
+    });
   }
 
   return overdue;

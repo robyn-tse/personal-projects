@@ -58,6 +58,15 @@ async function status() {
     console.log(`  Assessing ${name} (${ts.length} thread(s))...`);
     const raw = await assessContactThreads({ name, transcript: buildTranscript(ts) });
     const parsed = parseAssessment(raw);
+
+    // Whose turn it is is set by who actually sent the LAST email (reliable) — not the
+    // model — but only when there's an open item. Closed / no-action threads keep the
+    // model's "NO OPEN ITEMS" read. This stops the model from mislabeling whose turn it is.
+    if (parsed.status !== 'NO OPEN ITEMS') {
+      const latest = ts.flatMap(t => t.messages).reduce((a, b) => new Date(b.date) >= new Date(a.date) ? b : a);
+      parsed.status = latest.fromMe ? 'WAITING ON THEM' : 'NEEDS MY ATTENTION';
+    }
+
     assessments.push({ name, domain, ...parsed });
     console.log(`    → ${parsed.status}`);
   }

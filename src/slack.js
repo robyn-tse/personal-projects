@@ -30,6 +30,9 @@ async function slackPost(endpoint, body) {
 }
 
 function channelFor(category) {
+  // Until we're talking to multiple audiences (vendors, guests, …), send everything to
+  // the default channel. Set SLACK_SPLIT_CHANNELS=true in .env to route by category later.
+  if (process.env.SLACK_SPLIT_CHANNELS !== 'true') return process.env.SLACK_CHANNEL_DEFAULT;
   const map = {
     VENUE: process.env.SLACK_CHANNEL_VENUES,
     VENDOR: process.env.SLACK_CHANNEL_VENDORS,

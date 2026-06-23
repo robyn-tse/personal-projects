@@ -132,10 +132,11 @@ NEXT: <one short sentence: the single best next action for me>
 Definitions (judge by SUBSTANCE — who owes the next real move — NOT by who happened to email last):
 - "NEEDS MY ATTENTION" = the ball is in MY court: they gave a substantive reply that now expects something from me (answered my question, sent pricing/a proposal, offered concrete dates/times to confirm, or asked me a question). I should respond or act.
 - "WAITING ON THEM" = the ball is in THEIR court: I asked something substantive they haven't actually answered yet, OR their most recent message is only an auto-acknowledgment / routing note ("thanks for your inquiry, we'll forward this to our team / someone will be in touch / out-of-office"). An acknowledgment is NOT a real answer, so it stays WAITING ON THEM — I should not have to reply to it.
-- "NO OPEN ITEMS" = nothing is pending either way: the relationship is closed or declined (they can't accommodate us / we've ruled them out / they rejected us), OR the immediate item is fully settled with no action left for either side right now (e.g. a visit is confirmed, or a question was answered and needs no follow-up).
+- "NO OPEN ITEMS" = nothing is pending either way: the relationship is fully closed (they declined us outright, or we've explicitly ruled them out with no further steps). Do NOT use this for a confirmed visit/meeting — I still need to reply to confirm attendance.
 
 Rules:
-- An auto-reply, confirmation-of-receipt, or "we'll pass this along" does NOT put the ball in my court. Treat it as WAITING ON THEM.
+- An auto-reply, confirmation-of-receipt, or "we'll pass this along / someone will be in touch" does NOT put the ball in my court. Treat it as WAITING ON THEM.
+- If they confirmed a meeting, site visit, or call, that IS NEEDS MY ATTENTION — I still need to reply to acknowledge/confirm I'll be there.
 - A newer email from them does NOT automatically resolve an earlier unanswered question, and does NOT automatically demand a reply. Judge by whether a real question or decision is now genuinely on my plate.
 - If they declined us or cannot accommodate our request and there's nothing left to pursue, that's NO OPEN ITEMS.
 - Be concise and specific.`;

@@ -228,10 +228,63 @@ export async function fetchWeddingConversations() {
       counterpartyEmail: email,
       counterpartyDomain: domain,
       counterpartyName: name,
+      // Message-ID of the latest message — used to thread a draft reply correctly.
+      lastMessageIdHeader: header(msgs[msgs.length - 1], 'Message-ID'),
       messages,
     });
   }
   return out;
+}
+
+// Thread IDs that already have a draft in them — so we never create a duplicate draft.
+export async function threadIdsWithDrafts() {
+  const auth = getOAuth2Client();
+  const gmail = google.gmail({ version: 'v1', auth });
+  const ids = new Set();
+  let pageToken;
+  do {
+    const res = await gmail.users.drafts.list({ userId: 'me', maxResults: 100, pageToken });
+    for (const d of res.data.drafts || []) {
+      if (d.message?.threadId) ids.add(d.message.threadId);
+    }
+    pageToken = res.data.nextPageToken;
+  } while (pageToken);
+  return ids;
+}
+
+// Create a reply draft inside an existing thread. Sets In-Reply-To / References so
+// Gmail nests it under the conversation. Never sends — it just sits in Drafts.
+export async function createDraftReply({ threadId, to, subject, inReplyTo, body }) {
+  const auth = getOAuth2Client();
+  const gmail = google.gmail({ version: 'v1', auth });
+
+  const from = process.env.GMAIL_ADDRESS;
+  const replySubject = /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+  const subjectEnc = `=?UTF-8?B?${Buffer.from(replySubject, 'utf8').toString('base64')}?=`;
+  const lines = [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${subjectEnc}`,
+  ];
+  if (inReplyTo) {
+    lines.push(`In-Reply-To: ${inReplyTo}`);
+    lines.push(`References: ${inReplyTo}`);
+  }
+  lines.push(
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(body, 'utf8').toString('base64'),
+  );
+  const raw = Buffer.from(lines.join('\r\n'), 'utf8').toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  const res = await gmail.users.drafts.create({
+    userId: 'me',
+    requestBody: { message: { raw, threadId } },
+  });
+  return res.data;
 }
 
 export async function sendEmail({ to, subject, body, labelName }) {

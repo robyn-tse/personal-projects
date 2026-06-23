@@ -147,3 +147,33 @@ Rules:
     messages: [{ role: 'user', content: prompt }],
   });
 }
+
+/**
+ * Draft a ready-to-send reply for a contact that needs my attention.
+ * Returns ONLY the email body (no subject line) in a warm, professional voice.
+ * `openItem` is the specific thing I owe them (from assessContactThreads).
+ */
+export async function draftReply({ name, transcript, openItem }) {
+  const prompt = `You are drafting an email reply on behalf of Robyn (getting married with her partner Felix) to a wedding venue/vendor/planner. Write in Robyn's voice: warm, gracious, and professional — friendly but polished, the way she writes her own outreach.
+
+CONTACT: ${name}
+WHAT I OWE THEM (the open item to address): ${openItem || 'respond appropriately to their latest message'}
+
+Full correspondence so far (oldest first). "ME" = Robyn; "THEM" = the contact:
+
+${transcript}
+
+Write ONLY the body of Robyn's next reply — no subject line, no "Subject:", no email headers, no commentary. Requirements:
+- Directly address the open item above.
+- Be concise (a few short paragraphs at most) and genuinely warm.
+- Do NOT invent facts, prices, or commitments that aren't supported by the thread or by Robyn's known plans (≈100–125 guests, full-weekend buyout, June/July 2027, coastal Denmark, ~$100K event budget).
+- If a detail genuinely requires Robyn's personal decision (e.g. picking one of several offered times, confirming an exact date), insert a clearly bracketed placeholder like [confirm which time works] so she can fill it in — do not guess.
+- End with a sign-off. Use "Warm regards,\\nRobyn & Felix" unless the thread clearly establishes a different sign-off.
+- Output plain text only, ready to paste/send.`;
+
+  return anthropicMessages({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 800,
+    messages: [{ role: 'user', content: prompt }],
+  });
+}

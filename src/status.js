@@ -9,8 +9,8 @@
  */
 
 import 'dotenv/config';
-import { fetchWeddingConversations } from './gmail.js';
-import { assessContactThreads } from './pdf.js';
+import { fetchWeddingConversations, threadIdsWithDrafts, createDraftReply } from './gmail.js';
+import { assessContactThreads, draftReply } from './pdf.js';
 import { sendStatusBoard } from './slack.js';
 
 function buildTranscript(threads) {
@@ -68,12 +68,54 @@ async function status() {
       parsed.status = 'WAITING ON THEM';
     }
 
-    assessments.push({ name, domain, ...parsed });
+    // Stash the threads + latest message so we can draft a reply later if needed.
+    assessments.push({ name, domain, ...parsed, _threads: ts, _latest: latest });
     console.log(`    → ${parsed.status}`);
   }
 
+  // Draft replies for everything that needs my attention (set DRAFT_REPLIES=false to skip).
+  // Drafts are created in-thread and never sent; skip threads that already have a draft.
+  let drafted = 0;
+  if (process.env.DRAFT_REPLIES !== 'false') {
+    const haveDrafts = await threadIdsWithDrafts();
+    for (const a of assessments.filter(x => x.status === 'NEEDS MY ATTENTION')) {
+      // Reply in the thread that holds this contact's most recent message.
+      const target = a._threads
+        .slice()
+        .sort((t1, t2) => {
+          const d = t => Math.max(...t.messages.map(m => new Date(m.date).getTime()));
+          return d(t2) - d(t1);
+        })[0];
+      if (!target) continue;
+      if (haveDrafts.has(target.threadId)) {
+        console.log(`  ✎ Draft already exists for ${a.name} — skipping.`);
+        a.hasDraft = true;
+        continue;
+      }
+      try {
+        const body = await draftReply({
+          name: a.name,
+          transcript: buildTranscript(a._threads),
+          openItem: a.openItem,
+        });
+        await createDraftReply({
+          threadId: target.threadId,
+          to: target.counterpartyEmail,
+          subject: target.subject,
+          inReplyTo: target.lastMessageIdHeader,
+          body: body.trim(),
+        });
+        a.hasDraft = true;
+        drafted++;
+        console.log(`  ✎ Drafted reply for ${a.name}.`);
+      } catch (err) {
+        console.warn(`  ⚠️ Could not draft reply for ${a.name}: ${err.message}`);
+      }
+    }
+  }
+
   await sendStatusBoard(assessments);
-  console.log('✓ Done.\n');
+  console.log(`✓ Done. (${drafted} draft${drafted === 1 ? '' : 's'} created)\n`);
 }
 
 status().catch(err => {

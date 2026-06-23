@@ -44,10 +44,11 @@ function header(message, name) {
   return (message.payload.headers || []).find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 }
 
-function isFromMe(message) {
-  const me = (process.env.GMAIL_ADDRESS || '').toLowerCase();
-  return me && header(message, 'from').toLowerCase().includes(me);
-}
+// Our own addresses (you + partner) — set OUR_EMAILS in .env, comma-separated.
+const OURS = (process.env.OUR_EMAILS || process.env.GMAIL_ADDRESS || '')
+  .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+function isOurs(email) { return OURS.some(e => e && email.includes(e)); }
+function isFromMe(message) { return isOurs(header(message, 'from').toLowerCase()); }
 
 function extractBody(payload) {
   if (payload.body?.data) return decodeBase64(payload.body.data).toString('utf8');
@@ -200,11 +201,21 @@ export async function fetchWeddingConversations() {
       text: (extractBody(m.payload) || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500),
     }));
 
-    // Counterparty = the other party (prefer an inbound sender, else the recipient I wrote to)
-    const inbound = messages.find(m => !m.fromMe);
-    const cpHeader = inbound ? inbound.from : (messages[0].to || messages[0].from || '');
-    const email = (cpHeader.match(/<([^>]+)>/)?.[1] || cpHeader).trim().toLowerCase();
-    const name = cpHeader.replace(/<[^>]+>/, '').replace(/"/g, '').trim() || email;
+    // Counterparty = the most frequent non-"ours" address across all From/To headers
+    // (robust to Felix being cc'd, forwards, and multi-recipient threads).
+    const counts = {}, nameFor = {};
+    for (const m of messages) {
+      for (const raw of [m.from, m.to]) {
+        for (const part of (raw || '').split(',')) {
+          const email = (part.match(/<([^>]+)>/)?.[1] || part).trim().toLowerCase();
+          if (!email.includes('@') || isOurs(email)) continue;
+          counts[email] = (counts[email] || 0) + 1;
+          if (!nameFor[email]) nameFor[email] = part.replace(/<[^>]+>/, '').replace(/"/g, '').trim() || email;
+        }
+      }
+    }
+    const email = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    const name = nameFor[email] || email;
 
     out.push({
       threadId: t.id,

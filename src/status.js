@@ -59,12 +59,13 @@ async function status() {
     const raw = await assessContactThreads({ name, transcript: buildTranscript(ts) });
     const parsed = parseAssessment(raw);
 
-    // Whose turn it is is set by who actually sent the LAST email (reliable) — not the
-    // model — but only when there's an open item. Closed / no-action threads keep the
-    // model's "NO OPEN ITEMS" read. This stops the model from mislabeling whose turn it is.
-    if (parsed.status !== 'NO OPEN ITEMS') {
-      const latest = ts.flatMap(t => t.messages).reduce((a, b) => new Date(b.date) >= new Date(a.date) ? b : a);
-      parsed.status = latest.fromMe ? 'WAITING ON THEM' : 'NEEDS MY ATTENTION';
+    // Safety net only: if I literally sent the last email, the ball can't be in my
+    // court, so downgrade a stray "NEEDS MY ATTENTION" to "WAITING ON THEM". The
+    // harder call — when THEY sent last, is it a real reply or just an auto-ack? — is
+    // left to the semantic judgment above (an acknowledgment stays WAITING ON THEM).
+    const latest = ts.flatMap(t => t.messages).reduce((a, b) => new Date(b.date) >= new Date(a.date) ? b : a);
+    if (latest.fromMe && parsed.status === 'NEEDS MY ATTENTION') {
+      parsed.status = 'WAITING ON THEM';
     }
 
     assessments.push({ name, domain, ...parsed });

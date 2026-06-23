@@ -21,6 +21,38 @@ async function getLiveDkkRate() {
   }
 }
 
+// Call the Anthropic API with retry/backoff. A transient 429/529/5xx must NOT be
+// swallowed into an empty string — that would silently collapse the status board.
+async function anthropicMessages(payload, { retries = 4 } = {}) {
+  let lastErr = '';
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.content?.[0]?.text;
+      if (text) return text;
+      lastErr = 'empty response';
+    } else {
+      lastErr = `HTTP ${res.status}`;
+      // Only retry on overload / rate-limit / server errors
+      if (![429, 500, 502, 503, 529].includes(res.status)) break;
+    }
+    if (attempt < retries) {
+      const waitMs = 1000 * 2 ** attempt; // 1s, 2s, 4s, 8s
+      await new Promise(r => setTimeout(r, waitMs));
+    }
+  }
+  throw new Error(`Anthropic API failed after ${retries + 1} attempt(s): ${lastErr}`);
+}
+
 export async function parsePdfBuffer(buffer) {
   try {
     const data = await pdf(buffer);
@@ -70,22 +102,11 @@ ACTION: exactly one of [FOLLOW UP URGENTLY] [FOLLOW UP] [WAIT FOR MORE INFO] [DE
 
 Keep it tight and skimmable — this goes to a phone. No section headers, no tables, no long breakdowns. Pull exact numbers but don't over-explain.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+  return anthropicMessages({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1500,
+    messages: [{ role: 'user', content: prompt }],
   });
-
-  const data = await response.json();
-  return data.content?.[0]?.text || '[No evaluation returned]';
 }
 
 /**
@@ -108,27 +129,20 @@ STATUS: <one of NEEDS MY ATTENTION | WAITING ON THEM | NO OPEN ITEMS>
 OPEN ITEM: <the specific question or item that's actually still open — name it concretely; "none" if nothing is pending>
 NEXT: <one short sentence: the single best next action for me>
 
+Definitions (judge by SUBSTANCE — who owes the next real move — NOT by who happened to email last):
+- "NEEDS MY ATTENTION" = the ball is in MY court: they gave a substantive reply that now expects something from me (answered my question, sent pricing/a proposal, offered concrete dates/times to confirm, or asked me a question). I should respond or act.
+- "WAITING ON THEM" = the ball is in THEIR court: I asked something substantive they haven't actually answered yet, OR their most recent message is only an auto-acknowledgment / routing note ("thanks for your inquiry, we'll forward this to our team / someone will be in touch / out-of-office"). An acknowledgment is NOT a real answer, so it stays WAITING ON THEM — I should not have to reply to it.
+- "NO OPEN ITEMS" = nothing is pending either way: the relationship is closed or declined (they can't accommodate us / we've ruled them out / they rejected us), OR the immediate item is fully settled with no action left for either side right now (e.g. a visit is confirmed, or a question was answered and needs no follow-up).
+
 Rules:
-- "NEEDS MY ATTENTION" = they're waiting on a reply from me, OR I asked something they never actually answered and I should follow up (e.g. they replied but dodged or ignored my question — even if in a different thread).
-- "WAITING ON THEM" = I've asked something they haven't answered yet and the ball is legitimately with them (no action needed from me right now).
-- "NO OPEN ITEMS" = nothing is pending either way.
-- A newer email from them does NOT automatically resolve an earlier unanswered question. Judge by whether the actual question was addressed, not by who emailed last.
+- An auto-reply, confirmation-of-receipt, or "we'll pass this along" does NOT put the ball in my court. Treat it as WAITING ON THEM.
+- A newer email from them does NOT automatically resolve an earlier unanswered question, and does NOT automatically demand a reply. Judge by whether a real question or decision is now genuinely on my plate.
+- If they declined us or cannot accommodate our request and there's nothing left to pursue, that's NO OPEN ITEMS.
 - Be concise and specific.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+  return anthropicMessages({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 500,
+    messages: [{ role: 'user', content: prompt }],
   });
-
-  const data = await response.json();
-  return data.content?.[0]?.text || '';
 }

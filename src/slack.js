@@ -165,7 +165,8 @@ export async function sendStatusBoard(assessments = []) {
 
   const needs = assessments.filter(a => a.status === 'NEEDS MY ATTENTION');
   const waiting = assessments.filter(a => a.status === 'WAITING ON THEM');
-  const clear = assessments.filter(a => a.status === 'NO OPEN ITEMS');
+  // "No open items" contacts (closed / declined / resolved) are intentionally dropped
+  // from the board — only the two actionable buckets are shown.
 
   const detail = (a) => {
     const item = a.openItem && a.openItem.toLowerCase() !== 'none' ? a.openItem : '';
@@ -179,12 +180,10 @@ export async function sendStatusBoard(assessments = []) {
     { type: 'section', text: { type: 'mrkdwn', text: `🔴 *Needs your attention — ${needs.length}*\n${needs.length ? needs.map(detail).join('\n') : '_None — all caught up 🎉_'}` } },
     { type: 'section', text: { type: 'mrkdwn', text: `🟢 *Waiting on them — ${waiting.length}*\n${waiting.length ? waiting.map(detail).join('\n') : '_None_'}` } },
   ];
-  if (clear.length) {
-    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `✅ *No open items — ${clear.length}*\n${clear.map(a => a.name).join(', ')}` } });
-  }
-  blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: `${assessments.length} contact(s) · from your Gmail "${process.env.GMAIL_LABEL || 'wedding'}" label` }] });
+  const shown = needs.length + waiting.length;
+  blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: `${shown} active · ${assessments.length} contact(s) total · from your Gmail "${process.env.GMAIL_LABEL || 'wedding'}" label` }] });
 
   const res = await postBlocks(channel, blocks, 'Wedding status board');
-  if (res.ok) console.log(`✓ Status board sent — ${needs.length} need attention, ${waiting.length} waiting, ${clear.length} clear.`);
+  if (res.ok) console.log(`✓ Status board sent — ${needs.length} need attention, ${waiting.length} waiting (${assessments.length - shown} closed/hidden).`);
   return res;
 }

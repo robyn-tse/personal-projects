@@ -16,6 +16,10 @@ import 'dotenv/config';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATE_PATH = path.join(__dirname, '../logs/last-sweep.json');
 
+// Optional domain → clean display-name map for the status board
+let VENUE_NAMES = {};
+try { VENUE_NAMES = JSON.parse(readFileSync(path.join(__dirname, '../config/venue-names.json'), 'utf8')); } catch { /* none */ }
+
 function getOAuth2Client() {
   const client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -215,13 +219,14 @@ export async function fetchWeddingConversations() {
       }
     }
     const email = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
-    const name = nameFor[email] || email;
+    const domain = email.split('@')[1] || email;
+    const name = VENUE_NAMES[domain] || nameFor[email] || email;
 
     out.push({
       threadId: t.id,
       subject: header(msgs[msgs.length - 1], 'Subject'),
       counterpartyEmail: email,
-      counterpartyDomain: email.split('@')[1] || email,
+      counterpartyDomain: domain,
       counterpartyName: name,
       messages,
     });

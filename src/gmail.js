@@ -124,7 +124,8 @@ export async function fetchWeddingThreads() {
 
   for (const t of threads) {
     const threadRes = await gmail.users.threads.get({ userId: 'me', id: t.id, format: 'full' });
-    const messages = threadRes.data.messages || [];
+    // Ignore our own unsent drafts when figuring out the latest inbound message.
+    const messages = (threadRes.data.messages || []).filter(m => !(m.labelIds || []).includes('DRAFT'));
     if (messages.length === 0) continue;
 
     // Evaluate the latest INBOUND message (skip threads where you spoke last / only you).
@@ -194,7 +195,9 @@ export async function fetchWeddingConversations() {
 
   for (const t of res.data.threads || []) {
     const tr = await gmail.users.threads.get({ userId: 'me', id: t.id, format: 'full' });
-    const msgs = tr.data.messages || [];
+    // Exclude unsent DRAFT messages — our own auto-drafts must not be read as if
+    // we'd already replied (that would corrupt whose-turn-it-is detection).
+    const msgs = (tr.data.messages || []).filter(m => !(m.labelIds || []).includes('DRAFT'));
     if (msgs.length === 0) continue;
 
     const messages = msgs.map(m => ({

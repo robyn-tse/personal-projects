@@ -56,14 +56,26 @@ async function status() {
     // Display name: the most descriptive counterparty name in the group, else the domain
     const name = ts.map(t => t.counterpartyName).sort((a, b) => b.length - a.length)[0] || domain;
     console.log(`  Assessing ${name} (${ts.length} thread(s))...`);
-    const raw = await assessContactThreads({ name, transcript: buildTranscript(ts) });
-    const parsed = parseAssessment(raw);
+    const latest = ts.flatMap(t => t.messages).reduce((a, b) => new Date(b.date) >= new Date(a.date) ? b : a);
+
+    let parsed;
+    try {
+      parsed = parseAssessment(await assessContactThreads({ name, transcript: buildTranscript(ts) }));
+    } catch (err) {
+      // The API failed even after retries. NEVER silently drop the contact — fall
+      // back to a deterministic last-sender read so it still shows on the board.
+      console.warn(`    ⚠️ Assessment failed (${err.message}) — using last-sender fallback.`);
+      parsed = {
+        status: latest.fromMe ? 'WAITING ON THEM' : 'NEEDS MY ATTENTION',
+        openItem: '(could not auto-assess — review this thread manually)',
+        next: '',
+      };
+    }
 
     // Safety net only: if I literally sent the last email, the ball can't be in my
     // court, so downgrade a stray "NEEDS MY ATTENTION" to "WAITING ON THEM". The
     // harder call — when THEY sent last, is it a real reply or just an auto-ack? — is
     // left to the semantic judgment above (an acknowledgment stays WAITING ON THEM).
-    const latest = ts.flatMap(t => t.messages).reduce((a, b) => new Date(b.date) >= new Date(a.date) ? b : a);
     if (latest.fromMe && parsed.status === 'NEEDS MY ATTENTION') {
       parsed.status = 'WAITING ON THEM';
     }

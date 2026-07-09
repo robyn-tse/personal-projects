@@ -387,8 +387,8 @@ function buildPage(hid) {
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",q2opt:"(optional)",doneH:"We can\'t wait to celebrate with you!",daysTo:"days to go",send:"Send our RSVP",deadline:"Please respond by December 31, 2026 — you can update your response anytime using this link.",doneP:"You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum erwarten, mit euch zu feiern!",daysTo:"Tage noch",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026 \\u2014 ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast— a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favourite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to celebrate with you!",daysTo:"days to go",send:"Send our RSVP",deadline:"Please respond by December 31, 2026. You can update your response anytime using this link.",doneP:"You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum erwarten, mit euch zu feiern!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026. Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang="en";' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
@@ -414,6 +414,7 @@ function buildPage(hid) {
 'document.getElementById("q2text").textContent=t.q2;' +
 'document.getElementById("send").textContent=t.send;' +
 'document.getElementById("dateline").textContent=t.date;' +
+'document.getElementById("invite").textContent=t.invite;' +
 'document.getElementById("deadline").textContent=t.deadline;' +
 'document.getElementById("song").placeholder=t.songPh;' +
 'document.getElementById("doneH").textContent=t.doneH;' +
@@ -495,12 +496,13 @@ function buildPage(hid) {
     '<h1 id="hello"></h1>' +
     '<div class="date" id="dateline">Stella Maris, Denmark &middot; July 9&ndash;11, 2027</div>' +
     '<div class="rule"></div>' +
-    '<div class="meta" style="text-align:left;margin-bottom:32px"><span id="deadline"></span></div>' +
+    '<p id="invite" style="font-size:15px;line-height:1.75;color:var(--ink);margin:0 0 40px"></p>' +
     '<h2 id="q1"></h2><div class="sub" id="q1sub"></div>' +
     '<div id="people"></div>' +
     '<div class="block"><h2 id="q2"><span id="q2text"></span> <span id="q2opt" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:300;letter-spacing:0;text-transform:none;color:var(--sage)"></span></h2><div class="field">' +
     '<input type="text" id="song"></div></div>' +
     '<div class="err" id="err"></div>' +
+    '<div class="meta" style="text-align:left;margin-bottom:16px"><span id="deadline"></span></div>' +
     '<button class="send" id="send" onclick="send()"></button>' +
     '<div class="foot">Robyn &amp; Felix</div></div>' +
 

@@ -214,11 +214,6 @@ function submitRsvp(payload) {
 
     SpreadsheetApp.flush();
 
-    // Save uploaded photos to Drive
-    if (payload.photos && payload.photos.length) {
-      savePhotos_(hid, payload.photos);
-    }
-
     // Send confirmation email if at least one guest is attending
     var attending = guestArr.filter(function(g) { return g.attending; });
     if (attending.length && householdEmail) {
@@ -386,18 +381,14 @@ function buildPage(hid) {
 '.done p,.lost p{color:var(--sage);font-size:15px;line-height:1.75}' +
 '.loading{text-align:center;padding:90px 0;color:var(--sage);font-size:14px;letter-spacing:.1em;text-transform:uppercase}' +
 '.foot{text-align:center;margin-top:52px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);opacity:.6}' +
-'.photo-upload{margin-top:10px}' +
-'.photo-upload input[type=file]{display:none}' +
-'.photo-btn{display:inline-block;padding:10px 20px;background:none;border:1px solid rgba(28,43,58,.2);color:var(--ink);font-family:"DM Sans",sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:2px;transition:.2s}' +
-'.photo-btn:hover{border-color:var(--sage);color:var(--sage)}' +
-'.photo-names{margin-top:10px;font-size:13px;color:var(--sage)}';
+'';
 
   var js =
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",q3:"Share a memory",q3sub:"Upload a photo or two of a favourite memory with us \\u2014 optional, but we\'d love it!",photos:"Choose photos",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",send:"Send our RSVP",deadline:"Please respond by December 31, 2026.",update:"You can update your response anytime using this link.",doneH:"Thank you",doneP:"We can\'t wait to celebrate with you.<br>You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",q3:"Eine Erinnerung teilen",q3sub:"Ladet ein oder zwei Fotos einer sch\\u00f6nen Erinnerung mit uns hoch \\u2014 optional, aber wir freuen uns sehr dar\\u00fcber!",photos:"Fotos ausw\\u00e4hlen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026.",update:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneH:"Vielen Dank",doneP:"Wir freuen uns sehr auf die Feier mit euch.<br>Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",q2opt:"(optional)",doneH:"We can\'t wait to celebrate with you!",daysTo:"days to go",send:"Send our RSVP",deadline:"Please respond by December 31, 2026.",update:"You can update your response anytime using this link.",doneP:"You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum erwarten, mit euch zu feiern!",daysTo:"Tage noch",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026.",update:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang="en";' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
@@ -421,15 +412,13 @@ function buildPage(hid) {
 'document.getElementById("q1").textContent=t.q1;' +
 'document.getElementById("q1sub").textContent=t.q1sub;' +
 'document.getElementById("q2").textContent=t.q2;' +
-'document.getElementById("q3").textContent=t.q3;' +
-'document.getElementById("q3sub").textContent=t.q3sub;' +
-'document.getElementById("photosBtn").textContent=t.photos;' +
 'document.getElementById("send").textContent=t.send;' +
 'document.getElementById("dateline").textContent=t.date;' +
 'document.getElementById("deadline").textContent=t.deadline;' +
 'document.getElementById("update").textContent=t.update;' +
 'document.getElementById("song").placeholder=t.songPh;' +
 'document.getElementById("doneH").textContent=t.doneH;' +
+'document.getElementById("q2opt").textContent=t.q2opt;' +
 'document.getElementById("doneP").innerHTML=t.doneP;' +
 'var saved=[],i;' +
 'for(i=0;i<MEMBERS.length;i++){var c=document.getElementById("chk"+i);' +
@@ -476,21 +465,15 @@ function buildPage(hid) {
 'for(i=0;i<MEMBERS.length;i++){var g=document.getElementById("chk"+i).checked;' +
 'out.guests.push({name:MEMBERS[i].name,attending:g,meal:g?document.getElementById("meal"+i).value:"",language:g?document.getElementById("lang"+i).value:"",dietary:g?document.getElementById("diet"+i).value:""});}' +
 'document.getElementById("send").disabled=true;' +
-'var files=document.getElementById("photoInput").files;' +
-'var photos=[],pending=files.length;' +
-'function doSubmit(){' +
-'out.photos=photos;' +
 'google.script.run.withSuccessHandler(function(){' +
 'document.getElementById("form").style.display="none";' +
-'document.getElementById("done").style.display="block";window.scrollTo(0,0);})' +
+'var done=document.getElementById("done");done.style.display="block";window.scrollTo(0,0);' +
+'var wedding=new Date("2027-07-09T00:00:00");' +
+'var diff=Math.ceil((wedding-new Date())/(1000*60*60*24));' +
+'document.getElementById("countdown").textContent=diff+" "+T[lang].daysTo;})' +
 '.withFailureHandler(function(err){document.getElementById("send").disabled=false;' +
 'var e=document.getElementById("err");e.textContent=String(err&&err.message?err.message:err);e.style.display="block";})' +
 '.submitRsvp(out);}' +
-'if(!pending){doSubmit();return;}' +
-'for(var fi=0;fi<files.length;fi++){(function(f){' +
-'var r=new FileReader();' +
-'r.onload=function(ev){photos.push({name:f.name,data:ev.target.result,type:f.type});pending--;if(!pending)doSubmit();};' +
-'r.readAsDataURL(f);})(files[fi]);}}' +
 
 // boot: fetch the household, then render
 'document.getElementById("loading").textContent=T[lang].loading;' +
@@ -516,18 +499,15 @@ function buildPage(hid) {
     '<div class="meta" style="text-align:left;margin-bottom:32px"><span id="deadline"></span><br><span id="update"></span></div>' +
     '<h2 id="q1"></h2><div class="sub" id="q1sub"></div>' +
     '<div id="people"></div>' +
-    '<div class="block"><h2 id="q2"></h2><div class="field">' +
+    '<div class="block"><h2 id="q2"> <span id="q2opt" style="font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:300;letter-spacing:0;text-transform:none;color:var(--sage)"></span></h2><div class="field">' +
     '<input type="text" id="song"></div></div>' +
-    '<div class="block"><h2 id="q3"></h2><div class="sub" id="q3sub"></div>' +
-    '<div class="photo-upload"><label class="photo-btn" id="photosBtn" for="photoInput">Choose photos</label>' +
-    '<input type="file" id="photoInput" accept="image/*" multiple onchange="var ns=[];for(var i=0;i<this.files.length;i++)ns.push(this.files[i].name);document.getElementById(\'photoNames\').textContent=ns.join(\', \');">' +
-    '<div class="photo-names" id="photoNames"></div></div></div>' +
     '<div class="err" id="err"></div>' +
     '<button class="send" id="send" onclick="send()"></button>' +
     '<div class="foot">Robyn &amp; Felix</div></div>' +
 
     '<div class="done" id="done"><div class="crest">&#10022;</div>' +
-    '<h1 id="doneH"></h1><p id="doneP"></p></div>' +
+    '<h1 id="doneH"></h1><p id="doneP"></p>' +
+    '<div id="countdown" style="margin-top:32px;font-family:\'Cormorant Garamond\',serif;font-size:20px;color:var(--sage);letter-spacing:.1em"></div></div>' +
 
     '<div class="lost" id="lost"><div class="crest">&#10022;</div>' +
     '<h1 id="lostH"></h1><p id="lostP"></p></div>' +

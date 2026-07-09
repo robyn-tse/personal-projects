@@ -214,10 +214,15 @@ function submitRsvp(payload) {
 
     SpreadsheetApp.flush();
 
+    // Save uploaded photos to Drive
+    if (payload.photos && payload.photos.length) {
+      savePhotos_(hid, payload.photos);
+    }
+
     // Send confirmation email if at least one guest is attending
     var attending = guestArr.filter(function(g) { return g.attending; });
     if (attending.length && householdEmail) {
-      sendConfirmationEmail_(householdEmail, attending, payload.song, payload.note, payload.lang);
+      sendConfirmationEmail_(householdEmail, attending, payload.song, payload.lang);
     }
 
   } finally {
@@ -232,7 +237,7 @@ function submitRsvp(payload) {
  * Send a confirmation email in the language the guest selected on the form.
  * Uses MailApp (consumer Gmail cap ≈100 recipients/day).
  */
-function sendConfirmationEmail_(toEmail, attendingGuests, song, note, lang) {
+function sendConfirmationEmail_(toEmail, attendingGuests, song, lang) {
   var names = attendingGuests.map(function(g) { return g.name.split(' ')[0]; });
   var greeting;
   if (names.length === 1) {
@@ -244,7 +249,6 @@ function sendConfirmationEmail_(toEmail, attendingGuests, song, note, lang) {
   }
 
   var songLine = song ? song : '—';
-  var noteLine = note ? note : '';
 
   // Use the UI toggle language sent in the payload
   var isDE = (lang === 'de');
@@ -261,11 +265,10 @@ function sendConfirmationEmail_(toEmail, attendingGuests, song, note, lang) {
              ' — ' + (g.language || 'no language selected');
     }).join('\n') + '\n\n' +
     'Song request: ' + songLine + '\n' +
-    (noteLine ? 'Your note: ' + noteLine + '\n' : '') +
     '\nIf anything looks wrong, just use your invitation link again to update your response.\n\n' +
-    'We can\'t wait to celebrate with you in Svendborg!\n\n' +
+    'We can\'t wait to celebrate with you!\n\n' +
     'With love,\nRobyn & Felix\n\n' +
-    '——\n9–11 July 2027 · Stella Maris · Svendborg, Denmark';
+    '——\nJuly 9–11, 2027 · Stella Maris, Denmark';
 
   var bodyDE =
     'Hallo ' + greeting + ',\n\n' +
@@ -276,17 +279,37 @@ function sendConfirmationEmail_(toEmail, attendingGuests, song, note, lang) {
              ' — ' + (g.language || 'keine Sprache gewählt');
     }).join('\n') + '\n\n' +
     'Musikwunsch: ' + songLine + '\n' +
-    (noteLine ? 'Eure Nachricht: ' + noteLine + '\n' : '') +
     '\nFalls etwas nicht stimmt, könnt ihr einfach euren Einladungslink erneut aufrufen und eure Angaben aktualisieren.\n\n' +
-    'Wir können es kaum erwarten, mit euch in Svendborg zu feiern!\n\n' +
+    'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
     'Mit viel Liebe,\nRobyn & Felix\n\n' +
-    '——\n9.–11. Juli 2027 · Stella Maris · Svendborg, Dänemark';
+    '——\n9.–11. Juli 2027 · Stella Maris, Dänemark';
 
   MailApp.sendEmail({
     to:      toEmail,
     subject: isDE ? subjectDE : subjectEN,
     body:    isDE ? bodyDE : bodyEN
   });
+}
+
+
+/**
+ * Save uploaded photos to a "RSVP Photos / hid-N" folder in Drive.
+ * Each photo arrives as a data URL (base64); we decode and create a Drive file.
+ */
+function savePhotos_(hid, photos) {
+  var root = DriveApp.getFoldersByName('RSVP Photos');
+  var rootFolder = root.hasNext() ? root.next() : DriveApp.createFolder('RSVP Photos');
+  var subName = 'hid-' + hid;
+  var sub = rootFolder.getFoldersByName(subName);
+  var folder = sub.hasNext() ? sub.next() : rootFolder.createFolder(subName);
+
+  for (var i = 0; i < photos.length; i++) {
+    var photo = photos[i];
+    var parts = photo.data.split(',');
+    if (parts.length < 2) continue;
+    var blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), photo.type, photo.name);
+    folder.createFile(blob);
+  }
 }
 
 
@@ -361,14 +384,19 @@ function buildPage(hid) {
 '.done h1,.lost h1{margin-bottom:18px}' +
 '.done p,.lost p{color:var(--sage);font-size:15px;line-height:1.75}' +
 '.loading{text-align:center;padding:90px 0;color:var(--sage);font-size:14px;letter-spacing:.1em;text-transform:uppercase}' +
-'.foot{text-align:center;margin-top:52px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);opacity:.6}';
+'.foot{text-align:center;margin-top:52px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);opacity:.6}' +
+'.photo-upload{margin-top:10px}' +
+'.photo-upload input[type=file]{display:none}' +
+'.photo-btn{display:inline-block;padding:10px 20px;background:none;border:1px solid rgba(28,43,58,.2);color:var(--ink);font-family:"DM Sans",sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:2px;transition:.2s}' +
+'.photo-btn:hover{border-color:var(--sage);color:var(--sage)}' +
+'.photo-names{margin-top:10px;font-size:13px;color:var(--sage)}';
 
   var js =
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below, and tell us how they\'d like to eat.",q2:"A song to get you dancing",q3:"A note for us",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",notePh:"Anything you\'d like to say \\u2014 we\'d love to hear it.",songPh:"Artist \\u2014 Song title",send:"Send our RSVP",doneH:"Thank you",doneP:"We can\'t wait to celebrate with you.<br>Everything you need will follow by email.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast und teilt uns die Essenswahl mit.",q2:"Ein Lied zum Tanzen",q3:"Eine Nachricht f\\u00fcr uns",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",notePh:"Alles, was ihr uns sagen m\\u00f6chtet.",songPh:"K\\u00fcnstler \\u2014 Titel",send:"RSVP senden",doneH:"Vielen Dank",doneP:"Wir freuen uns sehr auf die Feier mit euch.<br>Alle Details folgen per E-Mail.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",q3:"Share a memory",q3sub:"Upload a photo or two of a favourite memory with us \\u2014 optional, but we\'d love it.",photos:"Choose photos",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",send:"Send our RSVP",doneH:"Thank you",doneP:"We can\'t wait to celebrate with you.<br>Everything you need will follow by email.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",q3:"Eine Erinnerung teilen",q3sub:"Ladet ein oder zwei Fotos einer sch\\u00f6nen Erinnerung mit uns hoch \\u2014 optional, aber wir freuen uns sehr dar\\u00fcber.",photos:"Fotos ausw\\u00e4hlen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",send:"RSVP senden",doneH:"Vielen Dank",doneP:"Wir freuen uns sehr auf die Feier mit euch.<br>Alle Details folgen per E-Mail.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang="en";' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
@@ -393,8 +421,9 @@ function buildPage(hid) {
 'document.getElementById("q1sub").textContent=t.q1sub;' +
 'document.getElementById("q2").textContent=t.q2;' +
 'document.getElementById("q3").textContent=t.q3;' +
+'document.getElementById("q3sub").textContent=t.q3sub;' +
+'document.getElementById("photosBtn").textContent=t.photos;' +
 'document.getElementById("send").textContent=t.send;' +
-'document.getElementById("note").placeholder=t.notePh;' +
 'document.getElementById("song").placeholder=t.songPh;' +
 'document.getElementById("doneH").textContent=t.doneH;' +
 'document.getElementById("doneP").innerHTML=t.doneP;' +
@@ -439,16 +468,25 @@ function buildPage(hid) {
 'for(i=0;i<MEMBERS.length;i++){if(document.getElementById("chk"+i).checked){' +
 'if(!document.getElementById("meal"+i).value||!document.getElementById("lang"+i).value){miss=true;}}}' +
 'if(miss){var e=document.getElementById("err");e.textContent=t.err;e.style.display="block";e.scrollIntoView({behavior:"smooth",block:"center"});return;}' +
-'var out={hid:HID,lang:lang,guests:[],song:document.getElementById("song").value,note:document.getElementById("note").value};' +
+'var out={hid:HID,lang:lang,guests:[],song:document.getElementById("song").value};' +
 'for(i=0;i<MEMBERS.length;i++){var g=document.getElementById("chk"+i).checked;' +
 'out.guests.push({name:MEMBERS[i].name,attending:g,meal:g?document.getElementById("meal"+i).value:"",language:g?document.getElementById("lang"+i).value:"",dietary:g?document.getElementById("diet"+i).value:""});}' +
 'document.getElementById("send").disabled=true;' +
+'var files=document.getElementById("photoInput").files;' +
+'var photos=[],pending=files.length;' +
+'function doSubmit(){' +
+'out.photos=photos;' +
 'google.script.run.withSuccessHandler(function(){' +
 'document.getElementById("form").style.display="none";' +
 'document.getElementById("done").style.display="block";window.scrollTo(0,0);})' +
 '.withFailureHandler(function(err){document.getElementById("send").disabled=false;' +
 'var e=document.getElementById("err");e.textContent=String(err&&err.message?err.message:err);e.style.display="block";})' +
 '.submitRsvp(out);}' +
+'if(!pending){doSubmit();return;}' +
+'for(var fi=0;fi<files.length;fi++){(function(f){' +
+'var r=new FileReader();' +
+'r.onload=function(ev){photos.push({name:f.name,data:ev.target.result,type:f.type});pending--;if(!pending)doSubmit();};' +
+'r.readAsDataURL(f);})(files[fi]);}}' +
 
 // boot: fetch the household, then render
 'document.getElementById("loading").textContent=T[lang].loading;' +
@@ -469,13 +507,16 @@ function buildPage(hid) {
     '<div id="form" style="display:none">' +
     '<div class="crest">&#10022;</div>' +
     '<h1 id="hello"></h1>' +
-    '<div class="date">Svendborg, Denmark &middot; 9&ndash;11 July 2027</div>' +
+    '<div class="date">Stella Maris, Denmark &middot; July 9&ndash;11, 2027</div>' +
     '<div class="rule"></div>' +
     '<h2 id="q1"></h2><div class="sub" id="q1sub"></div>' +
     '<div id="people"></div>' +
     '<div class="block"><h2 id="q2"></h2><div class="field">' +
     '<input type="text" id="song"></div></div>' +
-    '<div class="block"><h2 id="q3"></h2><div class="field"><textarea id="note"></textarea></div></div>' +
+    '<div class="block"><h2 id="q3"></h2><div class="sub" id="q3sub"></div>' +
+    '<div class="photo-upload"><label class="photo-btn" id="photosBtn" for="photoInput">Choose photos</label>' +
+    '<input type="file" id="photoInput" accept="image/*" multiple onchange="var ns=[];for(var i=0;i<this.files.length;i++)ns.push(this.files[i].name);document.getElementById(\'photoNames\').textContent=ns.join(\', \');">' +
+    '<div class="photo-names" id="photoNames"></div></div></div>' +
     '<div class="err" id="err"></div>' +
     '<button class="send" id="send" onclick="send()"></button>' +
     '<div class="foot">Robyn &amp; Felix</div></div>' +

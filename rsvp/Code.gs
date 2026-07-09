@@ -131,6 +131,10 @@ function submitRsvp(payload) {
     var now  = new Date();
     var song = String(payload.song || '').trim();
 
+    // Translate German dropdown values to English before writing to the sheet
+    var MEAL_MAP = { 'Fleisch': 'Meat', 'Pescetarisch': 'Pescatarian', 'Vegetarisch': 'Vegetarian' };
+    var LANG_MAP = { 'Englisch': 'English', 'Kantonesisch': 'Cantonese', 'Deutsch': 'German' };
+
     // Build a name→payload-guest map (lower-cased for fuzzy matching)
     var payloadByName = {};
     var guestArr = payload.guests || [];
@@ -183,10 +187,12 @@ function submitRsvp(payload) {
 
       matchedNames[nmLower] = true;
 
-      // Per-person write
+      // Per-person write (normalise DE→EN dropdown values)
+      var writeMeal = g.attending ? (MEAL_MAP[String(g.meal || '').trim()] || String(g.meal || '').trim()) : '';
+      var writeLang = g.attending ? (LANG_MAP[String(g.language || '').trim()] || String(g.language || '').trim()) : '';
       sh.getRange(rowIdx + 1, idx.attending + 1).setValue(g.attending ? 'Yes' : 'No');
-      sh.getRange(rowIdx + 1, idx.language + 1).setValue(g.attending ? String(g.language || '').trim() : '');
-      sh.getRange(rowIdx + 1, idx.meal + 1).setValue(g.attending ? String(g.meal || '').trim() : '');
+      sh.getRange(rowIdx + 1, idx.language + 1).setValue(writeLang);
+      sh.getRange(rowIdx + 1, idx.meal + 1).setValue(writeMeal);
       sh.getRange(rowIdx + 1, idx.dietary + 1).setValue(g.attending ? String(g.dietary || '').trim() : '');
 
       // Household-level columns — write on every household row to keep the sheet consistent
@@ -211,7 +217,7 @@ function submitRsvp(payload) {
     // Send confirmation email if at least one guest is attending
     var attending = guestArr.filter(function(g) { return g.attending; });
     if (attending.length && householdEmail) {
-      sendConfirmationEmail_(householdEmail, attending, payload.song, payload.note);
+      sendConfirmationEmail_(householdEmail, attending, payload.song, payload.note, payload.lang);
     }
 
   } finally {
@@ -223,10 +229,10 @@ function submitRsvp(payload) {
 
 
 /**
- * Send a bilingual (EN + DE) confirmation email to the household.
+ * Send a confirmation email in the language the guest selected on the form.
  * Uses MailApp (consumer Gmail cap ≈100 recipients/day).
  */
-function sendConfirmationEmail_(toEmail, attendingGuests, song, note) {
+function sendConfirmationEmail_(toEmail, attendingGuests, song, note, lang) {
   var names = attendingGuests.map(function(g) { return g.name.split(' ')[0]; });
   var greeting;
   if (names.length === 1) {
@@ -240,9 +246,8 @@ function sendConfirmationEmail_(toEmail, attendingGuests, song, note) {
   var songLine = song ? song : '—';
   var noteLine = note ? note : '';
 
-  // Detect household language preference from attendees (first attending guest wins)
-  var prefLang = (attendingGuests[0] && attendingGuests[0].language) ? attendingGuests[0].language.toLowerCase() : 'en';
-  var isDE = (prefLang === 'deutsch' || prefLang === 'german' || prefLang === 'de');
+  // Use the UI toggle language sent in the payload
+  var isDE = (lang === 'de');
 
   var subjectEN = 'Robyn & Felix — We got your RSVP!';
   var subjectDE = 'Robyn & Felix — Wir haben euer RSVP erhalten!';
@@ -277,17 +282,10 @@ function sendConfirmationEmail_(toEmail, attendingGuests, song, note) {
     'Mit viel Liebe,\nRobyn & Felix\n\n' +
     '——\n9.–11. Juli 2027 · Stella Maris · Svendborg, Dänemark';
 
-  // Send in detected language; always CC the other language block for bilingual households
-  var subject = isDE ? subjectDE : subjectEN;
-  var primaryBody = isDE ? bodyDE : bodyEN;
-  var secondaryBody = isDE ? bodyEN : bodyDE;
-
   MailApp.sendEmail({
     to:      toEmail,
-    subject: subject,
-    body:    primaryBody + '\n\n' +
-             '————————————————\n\n' +
-             secondaryBody
+    subject: isDE ? subjectDE : subjectEN,
+    body:    isDE ? bodyDE : bodyEN
   });
 }
 
@@ -441,7 +439,7 @@ function buildPage(hid) {
 'for(i=0;i<MEMBERS.length;i++){if(document.getElementById("chk"+i).checked){' +
 'if(!document.getElementById("meal"+i).value||!document.getElementById("lang"+i).value){miss=true;}}}' +
 'if(miss){var e=document.getElementById("err");e.textContent=t.err;e.style.display="block";e.scrollIntoView({behavior:"smooth",block:"center"});return;}' +
-'var out={hid:HID,guests:[],song:document.getElementById("song").value,note:document.getElementById("note").value};' +
+'var out={hid:HID,lang:lang,guests:[],song:document.getElementById("song").value,note:document.getElementById("note").value};' +
 'for(i=0;i<MEMBERS.length;i++){var g=document.getElementById("chk"+i).checked;' +
 'out.guests.push({name:MEMBERS[i].name,attending:g,meal:g?document.getElementById("meal"+i).value:"",language:g?document.getElementById("lang"+i).value:"",dietary:g?document.getElementById("diet"+i).value:""});}' +
 'document.getElementById("send").disabled=true;' +

@@ -380,6 +380,7 @@ function buildPage(hid) {
 'button.send:hover{background:var(--burgundy)}' +
 'button.send:disabled{opacity:.45;cursor:default}' +
 '.err{display:none;margin-top:24px;padding:13px 16px;background:rgba(107,39,55,.06);border:1px solid rgba(107,39,55,.25);border-radius:2px;color:var(--burgundy);font-size:14px;line-height:1.5}' +
+'.meta{text-align:center;font-size:13px;color:var(--sage);line-height:1.8;margin-top:18px}' +
 '.done,.lost{display:none;text-align:center;padding:70px 0}' +
 '.done h1,.lost h1{margin-bottom:18px}' +
 '.done p,.lost p{color:var(--sage);font-size:15px;line-height:1.75}' +
@@ -395,8 +396,8 @@ function buildPage(hid) {
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",q3:"Share a memory",q3sub:"Upload a photo or two of a favourite memory with us \\u2014 optional, but we\'d love it.",photos:"Choose photos",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",send:"Send our RSVP",doneH:"Thank you",doneP:"We can\'t wait to celebrate with you.<br>Everything you need will follow by email.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",q3:"Eine Erinnerung teilen",q3sub:"Ladet ein oder zwei Fotos einer sch\\u00f6nen Erinnerung mit uns hoch \\u2014 optional, aber wir freuen uns sehr dar\\u00fcber.",photos:"Fotos ausw\\u00e4hlen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",send:"RSVP senden",doneH:"Vielen Dank",doneP:"Wir freuen uns sehr auf die Feier mit euch.<br>Alle Details folgen per E-Mail.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",q3:"Share a memory",q3sub:"Upload a photo or two of a favourite memory with us \\u2014 optional, but we\'d love it.",photos:"Choose photos",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",send:"Send our RSVP",deadline:"Please respond by December 31, 2026.",update:"You can update your response anytime using this link.",doneH:"Thank you",doneP:"We can\'t wait to celebrate with you.<br>You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",q3:"Eine Erinnerung teilen",q3sub:"Ladet ein oder zwei Fotos einer sch\\u00f6nen Erinnerung mit uns hoch \\u2014 optional, aber wir freuen uns sehr dar\\u00fcber.",photos:"Fotos ausw\\u00e4hlen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026.",update:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneH:"Vielen Dank",doneP:"Wir freuen uns sehr auf die Feier mit euch.<br>Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang="en";' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
@@ -424,6 +425,8 @@ function buildPage(hid) {
 'document.getElementById("q3sub").textContent=t.q3sub;' +
 'document.getElementById("photosBtn").textContent=t.photos;' +
 'document.getElementById("send").textContent=t.send;' +
+'document.getElementById("deadline").textContent=t.deadline;' +
+'document.getElementById("update").textContent=t.update;' +
 'document.getElementById("song").placeholder=t.songPh;' +
 'document.getElementById("doneH").textContent=t.doneH;' +
 'document.getElementById("doneP").innerHTML=t.doneP;' +
@@ -519,6 +522,7 @@ function buildPage(hid) {
     '<div class="photo-names" id="photoNames"></div></div></div>' +
     '<div class="err" id="err"></div>' +
     '<button class="send" id="send" onclick="send()"></button>' +
+    '<div class="meta"><span id="deadline"></span><br><span id="update"></span></div>' +
     '<div class="foot">Robyn &amp; Felix</div></div>' +
 
     '<div class="done" id="done"><div class="crest">&#10022;</div>' +

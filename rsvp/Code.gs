@@ -513,6 +513,7 @@ function buildPage(hid) {
     '<h1 id="hello"></h1>' +
     '<div class="date" id="dateline">Stella Maris, Denmark &middot; July 9&ndash;11, 2027</div>' +
     '<div class="rule"></div>' +
+    '<div class="meta" style="text-align:left;margin-bottom:32px"><span id="deadline"></span><br><span id="update"></span></div>' +
     '<h2 id="q1"></h2><div class="sub" id="q1sub"></div>' +
     '<div id="people"></div>' +
     '<div class="block"><h2 id="q2"></h2><div class="field">' +
@@ -523,7 +524,6 @@ function buildPage(hid) {
     '<div class="photo-names" id="photoNames"></div></div></div>' +
     '<div class="err" id="err"></div>' +
     '<button class="send" id="send" onclick="send()"></button>' +
-    '<div class="meta"><span id="deadline"></span><br><span id="update"></span></div>' +
     '<div class="foot">Robyn &amp; Felix</div></div>' +
 
     '<div class="done" id="done"><div class="crest">&#10022;</div>' +

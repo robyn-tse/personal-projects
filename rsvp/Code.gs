@@ -535,7 +535,7 @@ function buildPage(hid) {
 'document.getElementById("doneH").innerHTML=T[lang].doneHDeclined;' +
 'document.getElementById("countdown").style.display="none";' +
 '}' +
-'document.getElementById("doneUpdate").innerHTML=\'<a href="\'+RSVP_URL+\'" style="color:var(--sage)">\'+T[lang].doneUpdate+\'</a>\';' +
+'document.getElementById("doneUpdate").innerHTML=\'<a href="\'+RSVP_URL+\'" target="_top" onclick="window.top.location.href=\\\'\'+RSVP_URL+\'\\\';return false;" style="color:var(--sage)">\'+T[lang].doneUpdate+\'</a>\';' +
 '})' +
 '.withFailureHandler(function(err){document.getElementById("send").disabled=false;' +
 'var e=document.getElementById("err");e.textContent=String(err&&err.message?err.message:err);e.style.display="block";})' +

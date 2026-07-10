@@ -217,7 +217,7 @@ function submitRsvp(payload) {
     // Send confirmation email if at least one guest is attending
     var attending = guestArr.filter(function(g) { return g.attending; });
     if (attending.length && householdEmail) {
-      sendConfirmationEmail_(householdEmail, attending, payload.song, payload.lang);
+      sendConfirmationEmail_(householdEmail, attending, payload.lang, hid);
     }
 
   } finally {
@@ -232,7 +232,7 @@ function submitRsvp(payload) {
  * Send a confirmation email in the language the guest selected on the form.
  * Uses MailApp (consumer Gmail cap ≈100 recipients/day).
  */
-function sendConfirmationEmail_(toEmail, attendingGuests, song, lang) {
+function sendConfirmationEmail_(toEmail, attendingGuests, lang, hid) {
   var names = attendingGuests.map(function(g) { return g.name.split(' ')[0]; });
   var greeting;
   if (names.length === 1) {
@@ -243,46 +243,54 @@ function sendConfirmationEmail_(toEmail, attendingGuests, song, lang) {
     greeting = names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1];
   }
 
-  var songLine = song ? song : '—';
-
-  // Use the UI toggle language sent in the payload
+  var nameList = attendingGuests.map(function(g) { return g.name; });
   var isDE = (lang === 'de');
+  var rsvpUrl = ScriptApp.getService().getUrl() + '?hid=' + hid;
 
   var subjectEN = 'Robyn & Felix — We got your RSVP!';
   var subjectDE = 'Robyn & Felix — Wir haben euer RSVP erhalten!';
 
-  var bodyEN =
+  var plainEN =
     'Hi ' + greeting + ',\n\n' +
-    'We\'re so happy you\'ll be joining us! Here\'s a summary of what we received:\n\n' +
-    attendingGuests.map(function(g) {
-      return '  • ' + g.name + ' — ' + (g.meal || 'no meal selected') +
-             (g.dietary ? ' (' + g.dietary + ')' : '') +
-             ' — ' + (g.language || 'no language selected');
-    }).join('\n') + '\n\n' +
-    'Song request: ' + songLine + '\n' +
-    '\nIf anything looks wrong, just use your invitation link again to update your response.\n\n' +
+    'We\'re so happy you\'ll be joining us!\n\n' +
+    nameList.join('\n') + '\n\n' +
+    'You can always use your invitation link again to update your response:\n' + rsvpUrl + '\n\n' +
     'We can\'t wait to celebrate with you!\n\n' +
     'With love,\nRobyn & Felix\n\n' +
     '——\nJuly 9–11, 2027 · Stella Maris, Denmark';
 
-  var bodyDE =
+  var htmlEN =
+    '<p>Hi ' + greeting + ',</p>' +
+    '<p>We\'re so happy you\'ll be joining us!</p>' +
+    '<p>' + nameList.join('<br>') + '</p>' +
+    '<p>You can always use your <a href="' + rsvpUrl + '">invitation link</a> again to update your response.</p>' +
+    '<p>We can\'t wait to celebrate with you!</p>' +
+    '<p>With love,<br>Robyn & Felix</p>' +
+    '<p style="color:#6B7F6A;font-size:12px">——<br>July 9–11, 2027 · Stella Maris, Denmark</p>';
+
+  var plainDE =
     'Hallo ' + greeting + ',\n\n' +
-    'Wir freuen uns so sehr, dass ihr dabei seid! Hier ist eine Zusammenfassung eurer Angaben:\n\n' +
-    attendingGuests.map(function(g) {
-      return '  • ' + g.name + ' — ' + (g.meal || 'keine Essensauswahl') +
-             (g.dietary ? ' (' + g.dietary + ')' : '') +
-             ' — ' + (g.language || 'keine Sprache gewählt');
-    }).join('\n') + '\n\n' +
-    'Musikwunsch: ' + songLine + '\n' +
-    '\nFalls etwas nicht stimmt, könnt ihr einfach euren Einladungslink erneut aufrufen und eure Angaben aktualisieren.\n\n' +
+    'Wir freuen uns so sehr, dass ihr dabei seid!\n\n' +
+    nameList.join('\n') + '\n\n' +
+    'Ihr könnt euren Einladungslink jederzeit wieder nutzen, um eure Angaben zu aktualisieren:\n' + rsvpUrl + '\n\n' +
     'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
     'Mit viel Liebe,\nRobyn & Felix\n\n' +
     '——\n9.–11. Juli 2027 · Stella Maris, Dänemark';
 
+  var htmlDE =
+    '<p>Hallo ' + greeting + ',</p>' +
+    '<p>Wir freuen uns so sehr, dass ihr dabei seid!</p>' +
+    '<p>' + nameList.join('<br>') + '</p>' +
+    '<p>Ihr könnt euren <a href="' + rsvpUrl + '">Einladungslink</a> jederzeit wieder nutzen, um eure Angaben zu aktualisieren.</p>' +
+    '<p>Wir können es kaum erwarten, mit euch zu feiern!</p>' +
+    '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
+    '<p style="color:#6B7F6A;font-size:12px">——<br>9.–11. Juli 2027 · Stella Maris, Dänemark</p>';
+
   MailApp.sendEmail({
-    to:      toEmail,
-    subject: isDE ? subjectDE : subjectEN,
-    body:    isDE ? bodyDE : bodyEN
+    to:       toEmail,
+    subject:  isDE ? subjectDE : subjectEN,
+    body:     isDE ? plainDE : plainEN,
+    htmlBody: isDE ? htmlDE : htmlEN
   });
 }
 

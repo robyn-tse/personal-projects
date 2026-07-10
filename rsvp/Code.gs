@@ -91,7 +91,8 @@ function getHousehold(hid) {
       attending: String(row[idx.attending] || '').trim(),
       meal:      String(row[idx.meal] || '').trim(),
       language:  String(row[idx.language] || '').trim(),
-      dietary:   String(row[idx.dietary] || '').trim()
+      dietary:   String(row[idx.dietary] || '').trim(),
+      kid:       String(row[idx.kid] || '').trim() === 'Yes'
     });
 
     if (!song && idx.song > -1 && row[idx.song]) song = String(row[idx.song]).trim();
@@ -486,11 +487,11 @@ function buildPage(hid, lang) {
 'var d=document.createElement("div");d.className="person";d.id="p"+i;' +
 'd.innerHTML=' +
 '\'<div class="row"><input type="checkbox" id="chk\'+i+\'" onchange="toggle(\'+i+\')"><label for="chk\'+i+\'">\'+MEMBERS[i].name+\'</label></div>\'+' +
-'\'<div class="detail">\'+' +
+'(MEMBERS[i].kid?"":\'<div class="detail">\'+' +
 '\'<div class="field"><label>\'+t.meal+\'</label><select id="meal\'+i+\'" onchange="clearErr()">\'+mo+\'</select></div>\'+' +
 '\'<div class="field"><label>\'+t.lang+\'</label><select id="lang\'+i+\'" onchange="clearErr()">\'+lo+\'</select></div>\'+' +
 '\'<div class="field"><label>\'+t.diet+\'</label><input type="text" id="diet\'+i+\'" placeholder="\'+t.dietPh+\'"></div>\'+' +
-'\'</div>\';' +
+'\'</div>\');' +
 'box.appendChild(d);' +
 // restore in-page edits if re-rendering (language toggle); else seed from sheet
 'if(saved[i].on!==null){' +
@@ -510,12 +511,12 @@ function buildPage(hid, lang) {
 
 'function send(){' +
 'var t=T[lang],i,miss=false;' +
-'for(i=0;i<MEMBERS.length;i++){if(document.getElementById("chk"+i).checked){' +
+'for(i=0;i<MEMBERS.length;i++){if(!MEMBERS[i].kid&&document.getElementById("chk"+i).checked){' +
 'if(!document.getElementById("meal"+i).value||!document.getElementById("lang"+i).value){miss=true;}}}' +
 'if(miss){var e=document.getElementById("err");e.textContent=t.err;e.style.display="block";e.scrollIntoView({behavior:"smooth",block:"center"});return;}' +
 'var out={hid:HID,lang:lang,guests:[],song:document.getElementById("song").value};' +
 'for(i=0;i<MEMBERS.length;i++){var g=document.getElementById("chk"+i).checked;' +
-'out.guests.push({name:MEMBERS[i].name,attending:g,meal:g?document.getElementById("meal"+i).value:"",language:g?document.getElementById("lang"+i).value:"",dietary:g?document.getElementById("diet"+i).value:""});}' +
+'out.guests.push({name:MEMBERS[i].name,attending:g,meal:(!MEMBERS[i].kid&&g)?document.getElementById("meal"+i).value:"",language:(!MEMBERS[i].kid&&g)?document.getElementById("lang"+i).value:"",dietary:(!MEMBERS[i].kid&&g)?document.getElementById("diet"+i).value:""});}' +
 'document.getElementById("send").disabled=true;' +
 'google.script.run.withSuccessHandler(function(){' +
 'document.getElementById("form").style.display="none";' +

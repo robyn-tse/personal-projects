@@ -216,8 +216,8 @@ function submitRsvp(payload) {
 
     // Send confirmation email if at least one guest is attending
     var attending = guestArr.filter(function(g) { return g.attending; });
-    if (attending.length && householdEmail) {
-      sendConfirmationEmail_(householdEmail, attending, payload.lang, hid);
+    if (householdEmail) {
+      sendConfirmationEmail_(householdEmail, guestArr, attending, payload.lang, hid);
     }
 
   } finally {
@@ -232,8 +232,11 @@ function submitRsvp(payload) {
  * Send a confirmation email in the language the guest selected on the form.
  * Uses MailApp (consumer Gmail cap ≈100 recipients/day).
  */
-function sendConfirmationEmail_(toEmail, attendingGuests, lang, hid) {
-  var names = attendingGuests.map(function(g) { return g.name.split(' ')[0]; });
+function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) {
+  var anyAttending = attendingGuests.length > 0;
+
+  // Greeting uses all guests (the whole household), first names only
+  var names = allGuests.map(function(g) { return g.name.split(' ')[0]; });
   var greeting;
   if (names.length === 1) {
     greeting = names[0];
@@ -250,41 +253,76 @@ function sendConfirmationEmail_(toEmail, attendingGuests, lang, hid) {
   var subjectEN = 'Robyn & Felix — We got your RSVP!';
   var subjectDE = 'Robyn & Felix — Wir haben euer RSVP erhalten!';
 
-  var plainEN =
-    'Hi ' + greeting + ',\n\n' +
-    'We\'re so happy you\'ll be joining us!\n\n' +
-    nameList.join('\n') + '\n\n' +
-    'You can always use your invitation link again to update your response:\n' + rsvpUrl + '\n\n' +
-    'We can\'t wait to celebrate with you!\n\n' +
-    'With love,\nRobyn & Felix\n\n' +
-    '——\nJuly 9–11, 2027 · Stella Maris, Denmark';
+  var plainEN, htmlEN, plainDE, htmlDE;
+  var footer = '——\nJuly 9–11, 2027 · Stella Maris, Denmark';
+  var footerDE = '——\n9.–11. Juli 2027 · Stella Maris, Dänemark';
+  var updateEN = 'You can always use your invitation link again to update your response:\n' + rsvpUrl;
+  var updateDE = 'Ihr könnt euren Einladungslink jederzeit wieder nutzen, um eure Angaben zu aktualisieren:\n' + rsvpUrl;
+  var updateHtmlEN = 'You can always use your <a href="' + rsvpUrl + '">invitation link</a> again to update your response.';
+  var updateHtmlDE = 'Ihr könnt euren <a href="' + rsvpUrl + '">Einladungslink</a> jederzeit wieder nutzen, um eure Angaben zu aktualisieren.';
 
-  var htmlEN =
-    '<p>Hi ' + greeting + ',</p>' +
-    '<p>We\'re so happy you\'ll be joining us!</p>' +
-    '<p>' + nameList.join('<br>') + '</p>' +
-    '<p>You can always use your <a href="' + rsvpUrl + '">invitation link</a> again to update your response.</p>' +
-    '<p>We can\'t wait to celebrate with you!</p>' +
-    '<p>With love,<br>Robyn & Felix</p>' +
-    '<p style="color:#6B7F6A;font-size:12px">——<br>July 9–11, 2027 · Stella Maris, Denmark</p>';
+  if (anyAttending) {
+    plainEN =
+      'Dear ' + greeting + ',\n\n' +
+      'We\'re so happy you\'ll be joining us!\n\n' +
+      nameList.join('\n') + '\n\n' +
+      updateEN + '\n\n' +
+      'We can\'t wait to celebrate with you!\n\n' +
+      'With love,\nRobyn & Felix\n\n' + footer;
 
-  var plainDE =
-    'Hallo ' + greeting + ',\n\n' +
-    'Wir freuen uns so sehr, dass ihr dabei seid!\n\n' +
-    nameList.join('\n') + '\n\n' +
-    'Ihr könnt euren Einladungslink jederzeit wieder nutzen, um eure Angaben zu aktualisieren:\n' + rsvpUrl + '\n\n' +
-    'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
-    'Mit viel Liebe,\nRobyn & Felix\n\n' +
-    '——\n9.–11. Juli 2027 · Stella Maris, Dänemark';
+    htmlEN =
+      '<p>Dear ' + greeting + ',</p>' +
+      '<p>We\'re so happy you\'ll be joining us!</p>' +
+      '<p>' + nameList.join('<br>') + '</p>' +
+      '<p>' + updateHtmlEN + '</p>' +
+      '<p>We can\'t wait to celebrate with you!</p>' +
+      '<p>With love,<br>Robyn & Felix</p>' +
+      '<p style="color:#6B7F6A;font-size:12px">' + footer.replace('\n', '<br>') + '</p>';
 
-  var htmlDE =
-    '<p>Hallo ' + greeting + ',</p>' +
-    '<p>Wir freuen uns so sehr, dass ihr dabei seid!</p>' +
-    '<p>' + nameList.join('<br>') + '</p>' +
-    '<p>Ihr könnt euren <a href="' + rsvpUrl + '">Einladungslink</a> jederzeit wieder nutzen, um eure Angaben zu aktualisieren.</p>' +
-    '<p>Wir können es kaum erwarten, mit euch zu feiern!</p>' +
-    '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
-    '<p style="color:#6B7F6A;font-size:12px">——<br>9.–11. Juli 2027 · Stella Maris, Dänemark</p>';
+    plainDE =
+      'Liebe ' + greeting + ',\n\n' +
+      'Wir freuen uns so sehr, dass ihr dabei seid!\n\n' +
+      nameList.join('\n') + '\n\n' +
+      updateDE + '\n\n' +
+      'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
+      'Mit viel Liebe,\nRobyn & Felix\n\n' + footerDE;
+
+    htmlDE =
+      '<p>Liebe ' + greeting + ',</p>' +
+      '<p>Wir freuen uns so sehr, dass ihr dabei seid!</p>' +
+      '<p>' + nameList.join('<br>') + '</p>' +
+      '<p>' + updateHtmlDE + '</p>' +
+      '<p>Wir können es kaum erwarten, mit euch zu feiern!</p>' +
+      '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
+      '<p style="color:#6B7F6A;font-size:12px">' + footerDE.replace('\n', '<br>') + '</p>';
+
+  } else {
+    plainEN =
+      'Dear ' + greeting + ',\n\n' +
+      'We\'re sad to miss you, but hope we can celebrate together another time soon!\n\n' +
+      updateEN + '\n\n' +
+      'With love,\nRobyn & Felix\n\n' + footer;
+
+    htmlEN =
+      '<p>Dear ' + greeting + ',</p>' +
+      '<p>We\'re sad to miss you, but hope we can celebrate together another time soon!</p>' +
+      '<p>' + updateHtmlEN + '</p>' +
+      '<p>With love,<br>Robyn & Felix</p>' +
+      '<p style="color:#6B7F6A;font-size:12px">' + footer.replace('\n', '<br>') + '</p>';
+
+    plainDE =
+      'Liebe ' + greeting + ',\n\n' +
+      'Es tut uns leid, dass ihr nicht dabei sein könnt, aber wir hoffen, bald gemeinsam feiern zu können!\n\n' +
+      updateDE + '\n\n' +
+      'Mit viel Liebe,\nRobyn & Felix\n\n' + footerDE;
+
+    htmlDE =
+      '<p>Liebe ' + greeting + ',</p>' +
+      '<p>Es tut uns leid, dass ihr nicht dabei sein könnt, aber wir hoffen, bald gemeinsam feiern zu können!</p>' +
+      '<p>' + updateHtmlDE + '</p>' +
+      '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
+      '<p style="color:#6B7F6A;font-size:12px">' + footerDE.replace('\n', '<br>') + '</p>';
+  }
 
   MailApp.sendEmail({
     to:       toEmail,

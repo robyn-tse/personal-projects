@@ -25,7 +25,9 @@
 
 // ---------- CONFIG ----------
 var SHEET_NAME = 'Guest List';
-var WEDDING_WEBSITE = 'https://YOUR-WEDDING-WEBSITE.com'; // ← update when you have the URL
+// TODO: replace placeholder before first real send — every confirmation email currently ships a dead link.
+var WEDDING_WEBSITE = 'https://YOUR-WEDDING-WEBSITE.com';
+var WEDDING_ICS = WEDDING_WEBSITE + '/wedding.ics';
 
 // Exact header spellings in row 1. Change here if you rename a column.
 var COL = {
@@ -339,26 +341,6 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
 }
 
 
-/**
- * Save uploaded photos to a "RSVP Photos / hid-N" folder in Drive.
- * Each photo arrives as a data URL (base64); we decode and create a Drive file.
- */
-function savePhotos_(hid, photos) {
-  var root = DriveApp.getFoldersByName('RSVP Photos');
-  var rootFolder = root.hasNext() ? root.next() : DriveApp.createFolder('RSVP Photos');
-  var subName = 'hid-' + hid;
-  var sub = rootFolder.getFoldersByName(subName);
-  var folder = sub.hasNext() ? sub.next() : rootFolder.createFolder(subName);
-
-  for (var i = 0; i < photos.length; i++) {
-    var photo = photos[i];
-    var parts = photo.data.split(',');
-    if (parts.length < 2) continue;
-    var blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), photo.type, photo.name);
-    folder.createFile(blob);
-  }
-}
-
 
 /** Map header names → 0-based column indexes. Immune to column reordering. */
 function resolveColumns_(headers) {
@@ -529,8 +511,7 @@ function buildPage(hid) {
 'var wedding=new Date("2027-07-09T00:00:00");' +
 'var diff=Math.ceil((wedding-new Date())/(1000*60*60*24));' +
 'document.getElementById("countdown").innerHTML="<span style=\'display:block;font-size:44px;line-height:1.1\'>"+diff+"</span>"+T[lang].daysTo;' +
-'var gcalUrl="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Robyn+%26+Felix+Wedding&dates=20270709T000000Z/20270712T000000Z&location=Stella+Maris%2C+Svendborg%2C+Denmark&details=' + encodeURIComponent('Robyn & Felix Wedding Weekend\n' + WEDDING_WEBSITE) + '";' +
-'document.getElementById("gcalLink").href=gcalUrl;document.getElementById("gcalLink").textContent=T[lang].gcal;document.getElementById("gcalLink").style.display="inline-block";' +
+'document.getElementById("gcalLink").href=' + JSON.stringify(WEDDING_ICS) + ';document.getElementById("gcalLink").textContent=T[lang].gcal;document.getElementById("gcalLink").style.display="inline-block";' +
 '}else{' +
 'document.getElementById("doneH").innerHTML=T[lang].doneHDeclined;' +
 'document.getElementById("countdown").style.display="none";' +

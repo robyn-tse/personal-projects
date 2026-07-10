@@ -263,61 +263,63 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
 
   if (anyAttending) {
     plainEN =
-      'Dear ' + greeting + ',\n\n' +
+      'Hi ' + greeting + ',\n\n' +
       'We\'re so happy you\'ll be joining us!\n\n' +
-      nameList.join('\n') + '\n\n' +
+      'Confirmed guests:\n' + nameList.join('\n') + '\n\n' +
+      'You\'ll receive an email soon with details on travel arrangements and accommodations. ' +
       updateEN + '\n\n' +
       'We can\'t wait to celebrate with you!\n\n' +
       'With love,\nRobyn & Felix\n\n' + footer;
 
     htmlEN =
-      '<p>Dear ' + greeting + ',</p>' +
+      '<p>Hi ' + greeting + ',</p>' +
       '<p>We\'re so happy you\'ll be joining us!</p>' +
-      '<p>' + nameList.join('<br>') + '</p>' +
-      '<p>' + updateHtmlEN + '</p>' +
+      '<p><strong>Confirmed guests:</strong><br>' + nameList.join('<br>') + '</p>' +
+      '<p>You\'ll receive an email soon with details on travel arrangements and accommodations. ' + updateHtmlEN + '</p>' +
       '<p>We can\'t wait to celebrate with you!</p>' +
       '<p>With love,<br>Robyn & Felix</p>' +
       '<p style="color:#6B7F6A;font-size:12px">' + footer.replace('\n', '<br>') + '</p>';
 
     plainDE =
-      'Liebe ' + greeting + ',\n\n' +
+      'Hallo ' + greeting + ',\n\n' +
       'Wir freuen uns so sehr, dass ihr dabei seid!\n\n' +
-      nameList.join('\n') + '\n\n' +
+      'Bestätigte Gäste:\n' + nameList.join('\n') + '\n\n' +
+      'Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft. ' +
       updateDE + '\n\n' +
       'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
       'Mit viel Liebe,\nRobyn & Felix\n\n' + footerDE;
 
     htmlDE =
-      '<p>Liebe ' + greeting + ',</p>' +
+      '<p>Hallo ' + greeting + ',</p>' +
       '<p>Wir freuen uns so sehr, dass ihr dabei seid!</p>' +
-      '<p>' + nameList.join('<br>') + '</p>' +
-      '<p>' + updateHtmlDE + '</p>' +
+      '<p><strong>Bestätigte Gäste:</strong><br>' + nameList.join('<br>') + '</p>' +
+      '<p>Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft. ' + updateHtmlDE + '</p>' +
       '<p>Wir können es kaum erwarten, mit euch zu feiern!</p>' +
       '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
       '<p style="color:#6B7F6A;font-size:12px">' + footerDE.replace('\n', '<br>') + '</p>';
 
   } else {
     plainEN =
-      'Dear ' + greeting + ',\n\n' +
+      'Hi ' + greeting + ',\n\n' +
       'We\'re sad to miss you, but hope we can celebrate together another time soon!\n\n' +
       updateEN + '\n\n' +
       'With love,\nRobyn & Felix\n\n' + footer;
 
     htmlEN =
-      '<p>Dear ' + greeting + ',</p>' +
+      '<p>Hi ' + greeting + ',</p>' +
       '<p>We\'re sad to miss you, but hope we can celebrate together another time soon!</p>' +
       '<p>' + updateHtmlEN + '</p>' +
       '<p>With love,<br>Robyn & Felix</p>' +
       '<p style="color:#6B7F6A;font-size:12px">' + footer.replace('\n', '<br>') + '</p>';
 
     plainDE =
-      'Liebe ' + greeting + ',\n\n' +
+      'Hallo ' + greeting + ',\n\n' +
       'Es tut uns leid, dass ihr nicht dabei sein könnt, aber wir hoffen, bald gemeinsam feiern zu können!\n\n' +
       updateDE + '\n\n' +
       'Mit viel Liebe,\nRobyn & Felix\n\n' + footerDE;
 
     htmlDE =
-      '<p>Liebe ' + greeting + ',</p>' +
+      '<p>Hallo ' + greeting + ',</p>' +
       '<p>Es tut uns leid, dass ihr nicht dabei sein könnt, aber wir hoffen, bald gemeinsam feiern zu können!</p>' +
       '<p>' + updateHtmlDE + '</p>' +
       '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +

@@ -109,7 +109,6 @@ function getHousehold(hid) {
  * payload = {
  *   hid: "7",
  *   song: "Artist — Title",
- *   note: "free text",
  *   guests: [
  *     { name:"Wiebke", attending:true,  meal:"Meat",  language:"German", dietary:"" },
  *     { name:"Tobi",   attending:false, meal:"",      language:"",       dietary:"" }
@@ -142,28 +141,28 @@ function submitRsvp(payload) {
     var MEAL_MAP = { 'Fleisch': 'Meat', 'Pescetarisch': 'Pescatarian', 'Vegetarisch': 'Vegetarian' };
     var LANG_MAP = { 'Englisch': 'English', 'Kantonesisch': 'Cantonese', 'Deutsch': 'German' };
 
-    // Build a name→payload-guest map (lower-cased for fuzzy matching)
+    // Build a name→payload-guest map (lower-cased for matching)
     var payloadByName = {};
     var guestArr = payload.guests || [];
     for (var gi = 0; gi < guestArr.length; gi++) {
       payloadByName[String(guestArr[gi].name).trim().toLowerCase()] = guestArr[gi];
     }
 
-    // Collect household email and track which payload names were matched
-    var householdEmail = '';
-    var matchedNames   = {};
+    // Collect household rows and all distinct email addresses
     var householdRows  = []; // 0-based indexes into values[]
-    var firstHouseholdRow = -1;
+    var emailsSeen     = {};
+    var householdEmails = [];
 
     for (var r = 1; r < values.length; r++) {
       var row = values[r];
       if (String(row[idx.token]).trim() !== hid) continue;
       householdRows.push(r);
-      if (firstHouseholdRow === -1) firstHouseholdRow = r;
-
-      // Harvest email from any row that has one
-      if (!householdEmail && idx.email > -1 && row[idx.email]) {
-        householdEmail = String(row[idx.email]).trim();
+      if (idx.email > -1 && row[idx.email]) {
+        var addr = String(row[idx.email]).trim();
+        if (addr && !emailsSeen[addr.toLowerCase()]) {
+          emailsSeen[addr.toLowerCase()] = true;
+          householdEmails.push(addr);
+        }
       }
     }
 
@@ -171,28 +170,38 @@ function submitRsvp(payload) {
       throw new Error('No rows found for token "' + hid + '". Check that the link is correct.');
     }
 
-    // Write per-person columns + household-level columns on the same pass
+    // Phase 1 — validate: confirm every payload name matches a sheet row.
+    // Nothing is written until this passes.
+    var rowByName = {};
+    for (var vi = 0; vi < householdRows.length; vi++) {
+      var vnm = String(values[householdRows[vi]][idx.name]).trim();
+      if (vnm) rowByName[vnm.toLowerCase()] = householdRows[vi];
+    }
+    var unmatchedPayload = [];
+    for (var pi = 0; pi < guestArr.length; pi++) {
+      var pLower = String(guestArr[pi].name).trim().toLowerCase();
+      if (!(pLower in rowByName)) unmatchedPayload.push(guestArr[pi].name);
+    }
+    if (unmatchedPayload.length) {
+      throw new Error('Submitted name(s) not found in sheet: ' + unmatchedPayload.join(', ') + '.');
+    }
+
+    // Phase 2 — write. Validation passed; safe to write.
     for (var ri = 0; ri < householdRows.length; ri++) {
       var rowIdx  = householdRows[ri];
       var rowData = values[rowIdx];
       var nm      = String(rowData[idx.name]).trim();
-      var nmLower = nm.toLowerCase();
-      var g       = payloadByName[nmLower];
+      var g       = payloadByName[nm.toLowerCase()];
 
       if (!g) {
-        // Name in sheet not sent in payload — unmatched. Log to Notes for review.
+        // Sheet name absent from payload — log for review.
         var currentNote = idx.notes > -1 ? String(rowData[idx.notes] || '') : '';
         var warningNote = '[RSVP mismatch ' + Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') + '] Name "' + nm + '" not in submitted payload.';
-        if (currentNote.indexOf('[RSVP mismatch') === -1) {
-          // Only prepend if not already flagged, to avoid spam on re-submit
-          if (idx.notes > -1) {
-            sh.getRange(rowIdx + 1, idx.notes + 1).setValue((currentNote ? currentNote + '\n' : '') + warningNote);
-          }
+        if (currentNote.indexOf('[RSVP mismatch') === -1 && idx.notes > -1) {
+          sh.getRange(rowIdx + 1, idx.notes + 1).setValue((currentNote ? currentNote + '\n' : '') + warningNote);
         }
         continue;
       }
-
-      matchedNames[nmLower] = true;
 
       // Per-person write (normalise DE→EN dropdown values)
       var writeMeal = g.attending ? (MEAL_MAP[String(g.meal || '').trim()] || String(g.meal || '').trim()) : '';
@@ -207,24 +216,16 @@ function submitRsvp(payload) {
       if (idx.updated > -1) sh.getRange(rowIdx + 1, idx.updated + 1).setValue(now);
     }
 
-    // Warn about payload names that didn't match any row
-    var unmatchedPayload = [];
-    for (var pi = 0; pi < guestArr.length; pi++) {
-      var pNameLower = String(guestArr[pi].name).trim().toLowerCase();
-      if (!matchedNames[pNameLower]) {
-        unmatchedPayload.push(guestArr[pi].name);
-      }
-    }
-    if (unmatchedPayload.length) {
-      throw new Error('Submitted name(s) not found in sheet: ' + unmatchedPayload.join(', ') + '. No data was partially written for these guests.');
-    }
-
     SpreadsheetApp.flush();
 
-    // Send confirmation email if at least one guest is attending
-    var attending = guestArr.filter(function(g) { return g.attending; });
-    if (householdEmail) {
-      sendConfirmationEmail_(householdEmail, guestArr, attending, payload.lang, hid);
+    // Email is a courtesy; a failure must never roll back or mask the saved RSVP.
+    if (householdEmails.length) {
+      var attending = guestArr.filter(function(g) { return g.attending; });
+      try {
+        sendConfirmationEmail_(householdEmails.join(','), guestArr, attending, payload.lang, hid);
+      } catch (emailErr) {
+        console.error('sendConfirmationEmail_ failed for hid=' + hid + ': ' + emailErr);
+      }
     }
 
   } finally {
@@ -255,7 +256,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
 
   var nameList = attendingGuests.map(function(g) { return g.name; });
   var isDE = (lang === 'de');
-  var rsvpUrl = ScriptApp.getService().getUrl() + '?hid=' + hid;
+  var rsvpUrl = ScriptApp.getService().getUrl() + '?hid=' + hid + '&lang=' + lang;
   var websiteUrl = WEDDING_WEBSITE;
 
   var subjectEN = 'Robyn & Felix — We got your RSVP!';
@@ -426,11 +427,11 @@ function buildPage(hid, lang) {
 
   var js =
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
-'var RSVP_URL = ' + JSON.stringify(rsvpBaseUrl + '?hid=' + String(hid)) + ';' +
+'var RSVP_URL = ' + JSON.stringify(rsvpBaseUrl + '?hid=' + String(hid) + '&lang=' + lang) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast: a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",doneHDeclined:"We\'ll miss you — thank you for letting us know. Hope we can celebrate together another time!",daysTo:"days to go",gcal:"Add to calendar",send:"Send RSVP",deadline:"Please respond by February 28, 2027.",doneUpdate:"You can update your response anytime using this link.",doneP:"",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",doneHDeclined:"Wir werden euch vermissen \\u2014 danke, dass ihr Bescheid gegeben habt. Wir hoffen, bald gemeinsam feiern zu k\\u00f6nnen!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",gcal:"Zum Kalender hinzuf\\u00fcgen",send:"RSVP Senden",deadline:"Bitte antwortet bis zum 28. Februar 2027.",doneUpdate:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast: a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",doneHDeclined:"We\'ll miss you — thank you for letting us know. Hope we can celebrate together another time!",daysTo:"days to go",gcal:"Add to calendar",send:"Send RSVP",deadline:"Please respond by February 28, 2027.",doneUpdate:"You can update your response anytime using this link.",doneP:"",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",errH:"Something went wrong",errP:"Please refresh the page, or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",doneHDeclined:"Wir werden euch vermissen \\u2014 danke, dass ihr Bescheid gegeben habt. Wir hoffen, bald gemeinsam feiern zu k\\u00f6nnen!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",gcal:"Zum Kalender hinzuf\\u00fcgen",send:"RSVP Senden",deadline:"Bitte antwortet bis zum 28. Februar 2027.",doneUpdate:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",errH:"Etwas ist schiefgelaufen",errP:"Bitte die Seite neu laden oder bei uns melden \\u2014 wir helfen weiter.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang=' + JSON.stringify(lang) + ';' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
@@ -443,6 +444,15 @@ function buildPage(hid, lang) {
 'document.getElementById("form").style.display="none";' +
 'document.getElementById("lostH").textContent=t.lostH;' +
 'document.getElementById("lostP").innerHTML=t.lostP;' +
+'document.getElementById("lost").style.display="block";}' +
+
+'function showErr(err){' +
+'console.error("getHousehold failed:",err);' +
+'var t=T[lang];' +
+'document.getElementById("loading").style.display="none";' +
+'document.getElementById("form").style.display="none";' +
+'document.getElementById("lostH").textContent=t.errH;' +
+'document.getElementById("lostP").innerHTML=t.errP;' +
 'document.getElementById("lost").style.display="block";}' +
 
 'function build(){' +
@@ -532,7 +542,7 @@ function buildPage(hid, lang) {
 'google.script.run.withSuccessHandler(function(res){' +
 'if(!res||!res.found){showLost();return;}' +
 'MEMBERS=res.members;GREETING=res.greeting;SONG=res.song||"";build();})' +
-'.withFailureHandler(function(){showLost();})' +
+'.withFailureHandler(function(err){showErr(err);})' +
 '.getHousehold(HID);';
 
   return '<!DOCTYPE html><html><head><base target="_top"><meta charset="utf-8">' +

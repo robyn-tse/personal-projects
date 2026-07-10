@@ -27,7 +27,8 @@
 var SHEET_NAME = 'Guest List';
 // TODO: replace placeholder before first real send — every confirmation email currently ships a dead link.
 var WEDDING_WEBSITE = 'https://YOUR-WEDDING-WEBSITE.com';
-var WEDDING_ICS = WEDDING_WEBSITE + '/wedding.ics';
+// TODO: replace with direct URL to the hosted .ics file (can be any host — Google Drive, Dropbox, etc.)
+var WEDDING_ICS = 'https://YOUR-ICS-URL.com/wedding.ics';
 
 // Exact header spellings in row 1. Change here if you rename a column.
 var COL = {

@@ -387,8 +387,8 @@ function buildPage(hid) {
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast— a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favourite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to celebrate with you!",daysTo:"days to go",send:"Send our RSVP",deadline:"Please respond by December 31, 2026. You can update your response anytime using this link.",doneP:"You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum erwarten, mit euch zu feiern!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026. Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast— a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favourite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",daysTo:"days to go",send:"Send our RSVP",deadline:"Please respond by December 31, 2026. You can update your response anytime using this link.",doneP:"You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",send:"RSVP senden",deadline:"Bitte antwortet bis zum 31. Dezember 2026. Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang="en";' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
@@ -408,7 +408,7 @@ function buildPage(hid) {
 'document.getElementById("loading").style.display="none";' +
 'document.getElementById("lost").style.display="none";' +
 'document.getElementById("form").style.display="block";' +
-'document.getElementById("hello").textContent=t.hello+GREETING;' +
+'document.getElementById("hello").textContent=t.hello+GREETING+"!";' +
 'document.getElementById("q1").textContent=t.q1;' +
 'document.getElementById("q1sub").textContent=t.q1sub;' +
 'document.getElementById("q2text").textContent=t.q2;' +
@@ -417,7 +417,7 @@ function buildPage(hid) {
 'document.getElementById("invite").textContent=t.invite;' +
 'document.getElementById("deadline").textContent=t.deadline;' +
 'document.getElementById("song").placeholder=t.songPh;' +
-'document.getElementById("doneH").textContent=t.doneH;' +
+'document.getElementById("doneH").innerHTML=t.doneH;' +
 'document.getElementById("q2opt").textContent=t.q2opt;' +
 'document.getElementById("doneP").innerHTML=t.doneP;' +
 'var saved=[],i;' +
@@ -470,7 +470,7 @@ function buildPage(hid) {
 'var done=document.getElementById("done");done.style.display="block";window.scrollTo(0,0);' +
 'var wedding=new Date("2027-07-09T00:00:00");' +
 'var diff=Math.ceil((wedding-new Date())/(1000*60*60*24));' +
-'document.getElementById("countdown").textContent=diff+" "+T[lang].daysTo;})' +
+'document.getElementById("countdown").innerHTML="<span style=\'display:block;font-size:44px;line-height:1.1\'>"+diff+"</span>"+T[lang].daysTo;})' +
 '.withFailureHandler(function(err){document.getElementById("send").disabled=false;' +
 'var e=document.getElementById("err");e.textContent=String(err&&err.message?err.message:err);e.style.display="block";})' +
 '.submitRsvp(out);}' +

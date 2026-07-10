@@ -12,8 +12,8 @@ Automated sweep of your Gmail `wedding` label → Claude evaluation → Slack DM
 3. Extracts text from PDFs
 4. Sends each reply to Claude for evaluation:
    - Pricing extracted + converted DKK → USD at live rate
-   - Capacity check (100–125 guests, full weekend format)
-   - Budget check (600,000 DKK / ~$85K)
+   - Capacity check (85–100 guests, full weekend format)
+   - Budget check (690,000 DKK / ~$100K)
    - Red flags flagged (contract gaps, restrictions, missing info)
    - Recommended action + suggested follow-up draft
 5. Posts a digest DM to you on Slack
@@ -130,18 +130,25 @@ message bodies, so it costs a little per run.) `setup-cron.sh` schedules it dail
 
 ## Adding cron (when ready)
 
-The quickest way — run the helper from the project root (sets it to every 2 hours):
+The quickest way — run the helper from the project root:
 ```bash
 ./setup-cron.sh
 ```
 
-It finds your `node` path, creates `logs/`, and installs the cron entry for you
-(replacing any previous one). The sweep then runs every 2 hours **whenever your
-laptop is awake** (cron skips runs while the machine is asleep — that's fine).
+It finds your `node` path, creates `logs/`, and installs the schedule for you:
+the **daily status board at 10:00** (laptop local time) **whenever your laptop is
+awake** (cron skips runs while the machine is asleep — that's fine). Re-running it
+also removes any older every-2-hours sweep entry, so you only get the daily summary.
 
-To do it manually instead — `crontab -e`, then add (runs every 2 hours):
+The per-email **sweep is no longer scheduled** — it posts a card for every reply as
+it lands, which is a lot of noise. Run it on demand anytime you want a mid-day check:
+```bash
+npm run sweep
 ```
-0 */2 * * * cd /path/to/wedding-monitor && /usr/local/bin/node src/sweep.js >> logs/cron.log 2>&1
+
+To schedule the status board manually instead — `crontab -e`, then add:
+```
+0 10 * * * cd /path/to/wedding-monitor && /usr/local/bin/node src/status.js >> logs/cron.log 2>&1
 ```
 Find your node path with `which node`. Watch output with `tail -f logs/cron.log`.
 

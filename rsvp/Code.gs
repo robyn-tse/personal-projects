@@ -268,7 +268,6 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       'Hi ' + greeting + ',\n\n' +
       'We\'re so happy you\'ll be joining us!\n\n' +
       'Confirmed guests:\n' + nameList.join('\n') + '\n\n' +
-      'You\'ll receive an email soon with details on travel arrangements and accommodations. ' +
       updateEN + '\n\n' +
       'In the meantime, visit our wedding website: ' + websiteUrl + '\n\n' +
       'We can\'t wait to celebrate with you!\n\n' +
@@ -278,7 +277,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       '<p>Hi ' + greeting + ',</p>' +
       '<p>We\'re so happy you\'ll be joining us!</p>' +
       '<p><strong>Confirmed guests:</strong><br>' + nameList.join('<br>') + '</p>' +
-      '<p>You\'ll receive an email soon with details on travel arrangements and accommodations. ' + updateHtmlEN + '</p>' +
+      '<p>' + updateHtmlEN + '</p>' +
       '<p>In the meantime, visit our <a href="' + websiteUrl + '">wedding website</a>.</p>' +
       '<p>We can\'t wait to celebrate with you!</p>' +
       '<p>With love,<br>Robyn & Felix</p>' +
@@ -288,7 +287,6 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       'Hallo ' + greeting + ',\n\n' +
       'Wir freuen uns so sehr, dass ihr dabei seid!\n\n' +
       'Bestätigte Gäste:\n' + nameList.join('\n') + '\n\n' +
-      'Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft. ' +
       updateDE + '\n\n' +
       'In der Zwischenzeit besucht unsere Hochzeitswebsite: ' + websiteUrl + '\n\n' +
       'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
@@ -298,7 +296,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       '<p>Hallo ' + greeting + ',</p>' +
       '<p>Wir freuen uns so sehr, dass ihr dabei seid!</p>' +
       '<p><strong>Bestätigte Gäste:</strong><br>' + nameList.join('<br>') + '</p>' +
-      '<p>Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft. ' + updateHtmlDE + '</p>' +
+      '<p>' + updateHtmlDE + '</p>' +
       '<p>In der Zwischenzeit besucht unsere <a href="' + websiteUrl + '">Hochzeitswebsite</a>.</p>' +
       '<p>Wir können es kaum erwarten, mit euch zu feiern!</p>' +
       '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
@@ -441,8 +439,8 @@ function buildPage(hid) {
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast— a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",daysTo:"days to go",gcal:"Add to Google Calendar",send:"Send our RSVP",deadline:"Please respond by February 28, 2027. You can update your response anytime using this link.",doneP:"You\'ll receive an email soon with details on travel arrangements and accommodations.",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",gcal:"Zu Google Kalender hinzuf\\u00fcgen",send:"RSVP senden",deadline:"Bitte antwortet bis zum 28. Februar 2027. Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"Ihr erhaltet bald eine E-Mail mit Details zu Reise und Unterkunft.",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast— a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",daysTo:"days to go",gcal:"Add to calendar",send:"Send our RSVP",deadline:"Please respond by February 28, 2027. You can update your response anytime using this link.",doneP:"",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",gcal:"Zum Kalender hinzuf\\u00fcgen",send:"RSVP senden",deadline:"Bitte antwortet bis zum 28. Februar 2027. Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
 'var lang="en";' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +

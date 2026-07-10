@@ -25,10 +25,11 @@
 
 // ---------- CONFIG ----------
 var SHEET_NAME = 'Guest List';
-// TODO: replace placeholder before first real send — every confirmation email currently ships a dead link.
+// TODO: replace both placeholders before first real send.
+//   WEDDING_WEBSITE  — every confirmation email currently ships a dead link.
+//   WEDDING_ICS      — the "Add to calendar" button is broken until this is set.
 var WEDDING_WEBSITE = 'https://YOUR-WEDDING-WEBSITE.com';
-// TODO: replace with direct URL to the hosted .ics file (can be any host — Google Drive, Dropbox, etc.)
-var WEDDING_ICS = 'https://YOUR-ICS-URL.com/wedding.ics';
+var WEDDING_ICS     = WEDDING_WEBSITE + '/wedding.ics';
 
 // Exact header spellings in row 1. Change here if you rename a column.
 var COL = {
@@ -48,8 +49,10 @@ var COL = {
 
 
 function doGet(e) {
-  var hid = (e && e.parameter && e.parameter.hid) ? String(e.parameter.hid).trim() : '';
-  return HtmlService.createHtmlOutput(buildPage(hid))
+  var hid     = (e && e.parameter && e.parameter.hid)  ? String(e.parameter.hid).trim()  : '';
+  var rawLang = (e && e.parameter && e.parameter.lang) ? String(e.parameter.lang).trim() : '';
+  var lang    = (rawLang === 'de') ? 'de' : 'en';
+  return HtmlService.createHtmlOutput(buildPage(hid, lang))
     .setTitle('Robyn & Felix — RSVP')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -376,7 +379,8 @@ function greetingFor_(members) {
 
 // ============================ PAGE ============================
 
-function buildPage(hid) {
+function buildPage(hid, lang) {
+  lang = (lang === 'de') ? 'de' : 'en'; // defensive normalise
   var css =
 ':root{--ink:#1C2B3A;--cream:#F5EFE3;--sage:#6B7F6A;--burgundy:#6B2737;}' +
 '*{box-sizing:border-box}' +
@@ -425,9 +429,9 @@ function buildPage(hid) {
 'var RSVP_URL = ' + JSON.stringify(rsvpBaseUrl + '?hid=' + String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
-'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast: a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",doneHDeclined:"We\'ll miss you — thank you for letting us know. Hope we can celebrate together another time!",daysTo:"days to go",gcal:"Add to Google Calendar",gcalIcs:"Add to Apple / Outlook",send:"Send RSVP",deadline:"Please respond by February 28, 2027.",doneUpdate:"You can update your response anytime using this link.",doneP:"",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
-'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",doneHDeclined:"Wir werden euch vermissen \\u2014 danke, dass ihr Bescheid gegeben habt. Wir hoffen, bald gemeinsam feiern zu k\\u00f6nnen!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",gcal:"Zu Google Kalender",gcalIcs:"Zu Apple / Outlook",send:"RSVP Senden",deadline:"Bitte antwortet bis zum 28. Februar 2027.",doneUpdate:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
-'var lang="en";' +
+'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast: a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",doneHDeclined:"We\'ll miss you — thank you for letting us know. Hope we can celebrate together another time!",daysTo:"days to go",gcal:"Add to calendar",send:"Send RSVP",deadline:"Please respond by February 28, 2027.",doneUpdate:"You can update your response anytime using this link.",doneP:"",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
+'de:{hello:"Willkommen, ",q1:"Wer kommt mit?",q1sub:"Bitte best\\u00e4tigt jeden Gast unten.",q2:"Ein Lied zum Tanzen",meal:"Essen",lang:"Sprache",diet:"Unvertr\\u00e4glichkeiten oder Allergien",meals:["Fleisch","Pescetarisch","Vegetarisch"],langs:["Englisch","Kantonesisch","Deutsch"],dietPh:"Optional",choose:"Bitte w\\u00e4hlen\\u2026",err:"Bitte w\\u00e4hlt f\\u00fcr jeden teilnehmenden Gast Essen und Sprache aus.",songPh:"K\\u00fcnstler \\u2014 Titel",date:"Stella Maris, D\\u00e4nemark · 9.–11. Juli 2027",q2opt:"(optional)",doneH:"Wir k\\u00f6nnen es kaum<br>erwarten, mit euch zu feiern!",doneHDeclined:"Wir werden euch vermissen \\u2014 danke, dass ihr Bescheid gegeben habt. Wir hoffen, bald gemeinsam feiern zu k\\u00f6nnen!",invite:"Ihr seid eingeladen zu einem langen Wochenende an der d\\u00e4nischen K\\u00fcste \\u2014 ein Boot, ein Bad im Meer, ein Abendessen bei Kerzenschein und Tanzen bis tief in die Nacht mit all unseren Lieblingsmenschen an einem Ort. Wir hoffen, ihr k\\u00f6nnt mit uns feiern!",daysTo:"Tage noch",gcal:"Zum Kalender hinzuf\\u00fcgen",send:"RSVP Senden",deadline:"Bitte antwortet bis zum 28. Februar 2027.",doneUpdate:"Ihr k\\u00f6nnt eure Antwort jederzeit \\u00fcber diesen Link aktualisieren.",doneP:"",lostH:"Wir konnten eure Einladung nicht finden",lostP:"Bitte nutzt den Link aus eurer Einladungs-E-Mail,<br>oder meldet euch bei uns.",loading:"L\\u00e4dt\\u2026"}};' +
+'var lang=' + JSON.stringify(lang) + ';' +
 
 'function clearErr(){document.getElementById("err").style.display="none";}' +
 'function toggle(i){var p=document.getElementById("p"+i);p.className=document.getElementById("chk"+i).checked?"person yes":"person";clearErr();}' +
@@ -512,10 +516,7 @@ function buildPage(hid) {
 'var wedding=new Date("2027-07-09T00:00:00");' +
 'var diff=Math.ceil((wedding-new Date())/(1000*60*60*24));' +
 'document.getElementById("countdown").innerHTML="<span style=\'display:block;font-size:44px;line-height:1.1\'>"+diff+"</span>"+T[lang].daysTo;' +
-'var gcalUrl="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Robyn+%26+Felix+Wedding&dates=20270709/20270712&location=Stella+Maris%2C+Svendborg%2C+Denmark";' +
-'document.getElementById("gcalLink").href=gcalUrl;document.getElementById("gcalLink").textContent=T[lang].gcal;' +
-'document.getElementById("icsLink").href=' + JSON.stringify(WEDDING_ICS) + ';document.getElementById("icsLink").textContent=T[lang].gcalIcs;' +
-'document.getElementById("calButtons").style.display="flex";' +
+'document.getElementById("gcalLink").href=' + JSON.stringify(WEDDING_ICS) + ';document.getElementById("gcalLink").textContent=T[lang].gcal;document.getElementById("gcalLink").style.display="inline-block";' +
 '}else{' +
 'document.getElementById("doneH").innerHTML=T[lang].doneHDeclined;' +
 'document.getElementById("countdown").style.display="none";' +
@@ -537,8 +538,8 @@ function buildPage(hid) {
   return '<!DOCTYPE html><html><head><base target="_top"><meta charset="utf-8">' +
     '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">' +
     '<style>' + css + '</style></head><body><div class="wrap">' +
-    '<div class="lang"><button id="btnEn" class="on" onclick="setLang(\'en\')">English</button>' +
-    '<button id="btnDe" onclick="setLang(\'de\')">Deutsch</button></div>' +
+    '<div class="lang"><button id="btnEn" class="' + (lang === 'en' ? 'on' : '') + '" onclick="setLang(\'en\')">English</button>' +
+    '<button id="btnDe" class="' + (lang === 'de' ? 'on' : '') + '" onclick="setLang(\'de\')">Deutsch</button></div>' +
 
     '<div class="loading" id="loading">Loading&hellip;</div>' +
 
@@ -560,10 +561,7 @@ function buildPage(hid) {
     '<div class="done" id="done"><div class="crest">&#10022;</div>' +
     '<h1 id="doneH"></h1><p id="doneP"></p>' +
     '<div id="countdown" style="margin-top:32px;font-family:\'Cormorant Garamond\',serif;font-size:20px;color:var(--sage);letter-spacing:.1em"></div>' +
-    '<div id="calButtons" style="display:none;margin-top:28px;display:none;gap:10px;flex-wrap:wrap;justify-content:center">' +
-    '<a id="gcalLink" href="#" target="_blank" style="font-family:\'DM Sans\',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);text-decoration:none;border:1px solid rgba(107,127,106,.4);padding:10px 20px;border-radius:2px;transition:.2s"></a>' +
-    '<a id="icsLink" href="#" target="_blank" style="font-family:\'DM Sans\',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);text-decoration:none;border:1px solid rgba(107,127,106,.4);padding:10px 20px;border-radius:2px;transition:.2s"></a>' +
-    '</div>' +
+    '<a id="gcalLink" href="#" target="_blank" style="display:none;margin-top:28px;font-family:\'DM Sans\',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);text-decoration:none;border:1px solid rgba(107,127,106,.4);padding:10px 20px;border-radius:2px;transition:.2s"></a>' +
     '<p id="doneUpdate" style="margin-top:28px;font-size:13px;color:var(--sage)"></p></div>' +
 
     '<div class="lost" id="lost"><div class="crest">&#10022;</div>' +

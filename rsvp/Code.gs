@@ -269,7 +269,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       'We\'re so happy you\'ll be joining us!\n\n' +
       'Confirmed guests:\n' + nameList.join('\n') + '\n\n' +
       updateEN + '\n\n' +
-      'In the meantime, visit our wedding website: ' + websiteUrl + '\n\n' +
+      'In the meantime, visit our wedding website for more details on the weekend: ' + websiteUrl + '\n\n' +
       'We can\'t wait to celebrate with you!\n\n' +
       'With love,\nRobyn & Felix\n\n' + footer;
 
@@ -278,7 +278,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       '<p>We\'re so happy you\'ll be joining us!</p>' +
       '<p><strong>Confirmed guests:</strong><br>' + nameList.join('<br>') + '</p>' +
       '<p>' + updateHtmlEN + '</p>' +
-      '<p>In the meantime, visit our <a href="' + websiteUrl + '">wedding website</a>.</p>' +
+      '<p>In the meantime, visit our <a href="' + websiteUrl + '">wedding website</a> for more details on the weekend.</p>' +
       '<p>We can\'t wait to celebrate with you!</p>' +
       '<p>With love,<br>Robyn & Felix</p>' +
       '<p style="color:#6B7F6A;font-size:12px">' + footer.replace('\n', '<br>') + '</p>';
@@ -288,7 +288,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       'Wir freuen uns so sehr, dass ihr dabei seid!\n\n' +
       'Bestätigte Gäste:\n' + nameList.join('\n') + '\n\n' +
       updateDE + '\n\n' +
-      'In der Zwischenzeit besucht unsere Hochzeitswebsite: ' + websiteUrl + '\n\n' +
+      'In der Zwischenzeit besucht unsere Hochzeitswebsite für weitere Details zum Wochenende: ' + websiteUrl + '\n\n' +
       'Wir können es kaum erwarten, mit euch zu feiern!\n\n' +
       'Mit viel Liebe,\nRobyn & Felix\n\n' + footerDE;
 
@@ -297,7 +297,7 @@ function sendConfirmationEmail_(toEmail, allGuests, attendingGuests, lang, hid) 
       '<p>Wir freuen uns so sehr, dass ihr dabei seid!</p>' +
       '<p><strong>Bestätigte Gäste:</strong><br>' + nameList.join('<br>') + '</p>' +
       '<p>' + updateHtmlDE + '</p>' +
-      '<p>In der Zwischenzeit besucht unsere <a href="' + websiteUrl + '">Hochzeitswebsite</a>.</p>' +
+      '<p>In der Zwischenzeit besucht unsere <a href="' + websiteUrl + '">Hochzeitswebsite</a> für weitere Details zum Wochenende.</p>' +
       '<p>Wir können es kaum erwarten, mit euch zu feiern!</p>' +
       '<p>Mit viel Liebe,<br>Robyn & Felix</p>' +
       '<p style="color:#6B7F6A;font-size:12px">' + footerDE.replace('\n', '<br>') + '</p>';

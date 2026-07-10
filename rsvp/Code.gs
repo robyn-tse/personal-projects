@@ -435,8 +435,11 @@ function buildPage(hid) {
 '.foot{text-align:center;margin-top:52px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage);opacity:.6}' +
 '';
 
+  var rsvpBaseUrl = ScriptApp.getService().getUrl();
+
   var js =
 'var HID = ' + JSON.stringify(String(hid)) + ';' +
+'var RSVP_URL = ' + JSON.stringify(rsvpBaseUrl + '?hid=' + String(hid)) + ';' +
 'var MEMBERS = [], GREETING = "", SONG = "";' +
 'var T={' +
 'en:{hello:"Welcome, ",q1:"Who\'s joining us?",q1sub:"Please confirm each guest below.",q2:"A song to get you dancing",meal:"Meal",lang:"Language",diet:"Dietary needs or allergies",meals:["Meat","Pescatarian","Vegetarian"],langs:["English","Cantonese","German"],dietPh:"Optional",choose:"Please select\\u2026",err:"Please choose a meal and language for each guest attending.",songPh:"Artist \\u2014 Song title",date:"Stella Maris, Denmark · July 9–11, 2027",invite:"You\'re invited to a long weekend on the Danish coast: a boat, a dip in the sea, a candlelit dinner, and dancing late into the night with all our favorite people in one place. We hope you can celebrate with us!",q2opt:"(optional)",doneH:"We can\'t wait to<br>celebrate with you!",doneHDeclined:"We\'ll miss you — thank you for letting us know. Hope we can celebrate together another time!",daysTo:"days to go",gcal:"Add to calendar",send:"Send our RSVP",deadline:"Please respond by February 28, 2027.",doneUpdate:"You can update your response anytime using this link.",doneP:"",lostH:"We couldn\'t find your invitation",lostP:"Please use the link from your invitation email,<br>or get in touch and we\'ll sort it out.",loading:"Loading\\u2026"},' +
@@ -532,7 +535,7 @@ function buildPage(hid) {
 'document.getElementById("doneH").innerHTML=T[lang].doneHDeclined;' +
 'document.getElementById("countdown").style.display="none";' +
 '}' +
-'document.getElementById("doneUpdate").innerHTML=\'<a href="\'+window.location.href+\'" style="color:var(--sage)">\'+T[lang].doneUpdate+\'</a>\';' +
+'document.getElementById("doneUpdate").innerHTML=\'<a href="\'+RSVP_URL+\'" style="color:var(--sage)">\'+T[lang].doneUpdate+\'</a>\';' +
 '})' +
 '.withFailureHandler(function(err){document.getElementById("send").disabled=false;' +
 'var e=document.getElementById("err");e.textContent=String(err&&err.message?err.message:err);e.style.display="block";})' +

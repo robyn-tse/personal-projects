@@ -5,10 +5,10 @@
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import 'dotenv/config';
 
-const BUDGET_DKK = Number(process.env.BUDGET_DKK) || 600000;
-const BUDGET_USD = Number(process.env.BUDGET_USD) || 85000;
-const GUEST_MIN = Number(process.env.GUEST_COUNT_MIN) || 100;
-const GUEST_MAX = Number(process.env.GUEST_COUNT_MAX) || 125;
+const BUDGET_DKK = Number(process.env.BUDGET_DKK) || 690000;
+const BUDGET_USD = Number(process.env.BUDGET_USD) || 100000;
+const GUEST_MIN = Number(process.env.GUEST_COUNT_MIN) || 85;
+const GUEST_MAX = Number(process.env.GUEST_COUNT_MAX) || 100;
 
 async function getLiveDkkRate() {
   if (process.env.DKK_TO_USD_OVERRIDE) return Number(process.env.DKK_TO_USD_OVERRIDE);
@@ -44,7 +44,7 @@ WEDDING REQUIREMENTS:
 - Budget: ${BUDGET_DKK.toLocaleString()} DKK (~$${BUDGET_USD.toLocaleString()} USD) for event costs (guest rooms paid separately)
 - Format: Full weekend buyout — Friday evening informal gathering, Saturday tented outdoor dinner (4+ courses, open bar 5hrs, 4-piece band + DJ), Sunday breakfast
 - Vibe: Warm, Nordic coastal, natural materials, unhurried — not formal or corporate
-- Dates targeting: June or July 2027
+- Dates targeting: July 9–11, 2027 (Friday–Sunday)
 - Guests: ~80% US-based flying into Copenhagen, some German family
 
 CURRENT DKK→USD RATE: ${dkkRate.toFixed(4)} (1 DKK = $${dkkRate.toFixed(4)})

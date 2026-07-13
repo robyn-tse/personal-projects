@@ -171,7 +171,6 @@ export async function sendStatusBoard(assessments = []) {
   const detail = (a) => {
     const item = a.openItem && a.openItem.toLowerCase() !== 'none' ? a.openItem : '';
     const lines = [`• *${a.name}*${item ? ` — ${item}` : ''}`];
-    if (a.next) lines.push(`   _Next: ${a.next}_`);
     if (a.hasDraft) lines.push(`   ✎ _Draft reply ready in Gmail — review & send_`);
     return lines.join('\n');
   };

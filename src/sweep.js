@@ -18,7 +18,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchWeddingThreads, fetchWeddingConversations } from './gmail.js';
 import { parsePdfBuffer, evaluateWithClaude } from './pdf.js';
-import { sendSlackDigest } from './slack.js';
 import { detectBounces, checkOverdueOutreach } from './alerts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -52,7 +51,6 @@ async function sweep() {
   const nonBounceThreads = threads.filter(t => !bounces.find(b => b.threadId === t.threadId));
 
   if (nonBounceThreads.length === 0 && bounces.length === 0 && overdue.length === 0) {
-    await sendSlackDigest({ results: [], bounces: [], overdue: [] });
     return;
   }
 
@@ -109,9 +107,6 @@ async function sweep() {
     sweptAt: new Date().toISOString(),
   })), null, 2));
   console.log(`\n✓ Log saved: ${logFile}`);
-
-  // 6. Send Slack digest
-  await sendSlackDigest({ results, bounces, overdue });
 
   console.log('\n✓ Sweep complete.\n');
 }
